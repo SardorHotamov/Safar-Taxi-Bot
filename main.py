@@ -823,22 +823,23 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN topilmadi. .env faylida BOT_TOKEN=... deb qo‘ying.")
-    
+
     # Ma'lumotlar bazasini ishga tushirish
     init_db()
 
-    app = Application.builder().token(BOT_TOKEN).post_timeout(10).get_updates_timeout(60).build()
+    app = Application.builder().token(BOT_TOKEN).pool_timeout(10).get_updates_pool_timeout(60).build()
 
     # Webhook sozlamalari
     port = int(os.getenv("PORT", 5000))  # Render'da PORT environment o'zgaruvchisi
-    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{os.getenv('PATH', 'webhook')}"  # Render URL
-
+    path = os.getenv("PATH", "webhook").replace("\\", "/").strip()  # Noto'g'ri qochishlarni tozalash
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL', 'localhost')}/{path}"  # Xavfsiz URL
+    
     # Webhook'ni sozlash
     app.run_webhook(
-        listen="0.0.0.0",  # Barcha ulanishlarni qabul qilish
-        port=port,         # Port
-        url_path=os.getenv("PATH", "webhook"),  # Webhook yo'li
-        webhook_url=webhook_url  # Tashqi URL
+       listen="0.0.0.0",  # Barcha ulanishlarni qabul qilish
+       port=port,         # Port
+       url_path=path,     # Tozalangan yo'l
+       webhook_url=webhook_url  # Tashqi URL
     )
 
     start_conv = ConversationHandler(
