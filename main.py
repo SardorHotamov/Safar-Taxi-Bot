@@ -827,7 +827,19 @@ def main():
     # Ma'lumotlar bazasini ishga tushirish
     init_db()
 
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(BOT_TOKEN).post_timeout(10).get_updates_timeout(60).build()
+
+    # Webhook sozlamalari
+    port = int(os.getenv("PORT", 5000))  # Render'da PORT environment o'zgaruvchisi
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{os.getenv('PATH', 'webhook')}"  # Render URL
+
+    # Webhook'ni sozlash
+    app.run_webhook(
+        listen="0.0.0.0",  # Barcha ulanishlarni qabul qilish
+        port=port,         # Port
+        url_path=os.getenv("PATH", "webhook"),  # Webhook yo'li
+        webhook_url=webhook_url  # Tashqi URL
+    )
 
     start_conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -896,7 +908,7 @@ def main():
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
 
-    app.run_polling()
+    # app.run_polling() o'rniga webhook ishlatiladi, yuqorida sozlangan
 
 if __name__ == "__main__":
     main()
