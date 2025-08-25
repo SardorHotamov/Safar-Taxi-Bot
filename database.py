@@ -9,12 +9,16 @@ if not MONGODB_URI:
     raise RuntimeError("MONGODB_URI topilmadi. .env faylida MONGODB_URI ni qo'shing.")
 
 client = MongoClient(MONGODB_URI)
+try:
+    client.server_info()  # Ulanishni tekshirish
+except Exception as e:
+    raise RuntimeError(f"MongoDB ulanishda xatolik: {e}")
+
 db = client.get_database("safartaxi")
 users_collection = db["users"]
 trips_collection = db["trips"]
 
 def init_db():
-    # MongoDB uchun alohida init kerak emas, lekin kolleksiyalarni yaratish mumkin
     pass
 
 def save_user(user_id, role, full_name, phone, car_model=None, car_color=None, car_number=None):

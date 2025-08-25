@@ -142,7 +142,6 @@ def format_match_info(user, trip, is_driver):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     init_db()
     user_id = update.effective_user.id
-    print(f"Start command from user_id: {user_id}, is_admin: {user_id in ADMIN_IDS}")  # Debug
     if user_id in ADMIN_IDS:
         await update.message.reply_text("Admin menyusi:", reply_markup=admin_menu_keyboard())
         return ADMIN_MENU
@@ -150,7 +149,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user:
         await update.message.reply_text("Profil menyusi:", reply_markup=show_main_menu_by_role(user['role']))
         return ConversationHandler.END
-
     text = (
         "Safar Taxi botiga xush kelibsiz!\n\n"
         " Haydovchi sifatida siz:\n"
@@ -170,8 +168,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def choose_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        return await start(update, context)
     if txt not in [BTN_DRIVER, BTN_PASSENGER]:
         await update.message.reply_text("Haydovchi yoki Yo‘lovchi tanlang:", reply_markup=role_keyboard())
         return CHOOSE_ROLE
@@ -182,9 +178,6 @@ async def choose_role(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def register_name(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Rolni tanlang:", reply_markup=role_keyboard())
-        return CHOOSE_ROLE
     if len(txt) < 3:
         await update.message.reply_text("Ism va familiya kamida 3 harfdan iborat bo‘lsin:", reply_markup=back_keyboard())
         return REGISTER_NAME
@@ -197,9 +190,6 @@ async def register_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
         p = update.message.contact.phone_number
     else:
         p = update.message.text
-    if p == BTN_BACK:
-        await update.message.reply_text("Ismingiz va familiyangizni kiriting:", reply_markup=back_keyboard())
-        return REGISTER_NAME
     if not is_valid_phone(p):
         await update.message.reply_text("To‘g‘ri telefon raqamini kiriting (+998...):", reply_markup=phone_keyboard())
         return REGISTER_PHONE
@@ -214,28 +204,17 @@ async def register_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return ConversationHandler.END
 
 async def register_car_model(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Telefon raqamingizni yuboring:", reply_markup=phone_keyboard())
-        return REGISTER_PHONE
-    context.user_data['car_model'] = txt
+    context.user_data['car_model'] = update.message.text
     await update.message.reply_text("Avtomobil rangingizni kiriting:", reply_markup=back_keyboard())
     return REGISTER_CAR_COLOR
 
 async def register_car_color(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Avtomobil modelingizni kiriting:", reply_markup=back_keyboard())
-        return REGISTER_CAR_MODEL
-    context.user_data['car_color'] = txt
+    context.user_data['car_color'] = update.message.text
     await update.message.reply_text("Avtomobil raqamingizni kiriting (masalan, 01A123BC):", reply_markup=back_keyboard())
     return REGISTER_CAR_NUMBER
 
 async def register_car_number(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Avtomobil rangingizni kiriting:", reply_markup=back_keyboard())
-        return REGISTER_CAR_COLOR
     if not is_valid_license(txt):
         await update.message.reply_text("Avtomobil raqami 7—10 belgidagi bo‘lsin:", reply_markup=back_keyboard())
         return REGISTER_CAR_NUMBER
@@ -262,16 +241,6 @@ async def choose_route(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def from_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    user_id = update.effective_user.id
-    if txt == BTN_BACK:
-        if user_id in ADMIN_IDS:
-            await update.message.reply_text("Admin menyusi:", reply_markup=admin_menu_keyboard())
-            return ADMIN_MENU
-        user = get_user(user_id)
-        if user:
-            await update.message.reply_text("Profil menyusi:", reply_markup=show_main_menu_by_role(user['role']))
-            return ConversationHandler.END
-        return await start(update, context)
     if txt not in regions:
         await update.message.reply_text("Iltimos, ro‘yxatdan viloyatni tanlang:", reply_markup=regions_keyboard())
         return FROM_REGION
@@ -280,32 +249,21 @@ async def from_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return FROM_DISTRICT
 
 async def from_district(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Viloyatni tanlang:", reply_markup=regions_keyboard())
-        return FROM_REGION
     region = context.user_data.get('from_region')
-    if not region or txt not in regions.get(region, []):
+    if not region or update.message.text not in regions.get(region, []):
         await update.message.reply_text(f"{region} ichida tumanni tanlang:", reply_markup=districts_keyboard(region))
         return FROM_DISTRICT
-    context.user_data['from_district'] = txt
+    context.user_data['from_district'] = update.message.text
     await update.message.reply_text("Mahalla yoki aniq manzilni kiriting (ixtiyoriy, o‘tkazib yuborish uchun Enter bosing):", reply_markup=back_keyboard())
     return FROM_AREA
 
 async def from_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Tumanni tanlang:", reply_markup=districts_keyboard(context.user_data['from_region']))
-        return FROM_DISTRICT
-    context.user_data['mahalla'] = txt if txt and txt != BTN_BACK else None
+    context.user_data['mahalla'] = update.message.text if update.message.text else None
     await update.message.reply_text("Qayerga borasiz? Viloyatni tanlang:", reply_markup=regions_keyboard())
     return TO_REGION
 
 async def to_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Mahalla yoki aniq manzilni kiriting:", reply_markup=back_keyboard())
-        return FROM_AREA
     if txt not in regions:
         await update.message.reply_text("Viloyatni tanlang:", reply_markup=regions_keyboard())
         return TO_REGION
@@ -314,15 +272,11 @@ async def to_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return TO_DISTRICT
 
 async def to_district(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Viloyatni tanlang:", reply_markup=regions_keyboard())
-        return TO_REGION
     region = context.user_data.get('to_region')
-    if not region or txt not in regions.get(region, []):
+    if not region or update.message.text not in regions.get(region, []):
         await update.message.reply_text(f"{region} ichida tumanni tanlang:", reply_markup=districts_keyboard(region))
         return TO_DISTRICT
-    context.user_data['to_district'] = txt
+    context.user_data['to_district'] = update.message.text
     role = context.user_data.get('role')
     if role == "driver":
         await update.message.reply_text("Narxni kiriting (so‘mda, ixtiyoriy, o‘tkazib yuborish uchun Enter bosing):", reply_markup=back_keyboard())
@@ -333,9 +287,6 @@ async def to_district(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def enter_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Tumanni tanlang:", reply_markup=districts_keyboard(context.user_data['to_region']))
-        return TO_DISTRICT
     try:
         price = int(txt) if txt and txt.isdigit() else None
         if price and price < 0:
@@ -349,30 +300,18 @@ async def enter_price(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def choose_seats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        role = context.user_data.get('role')
-        if role == "driver":
-            await update.message.reply_text("Narxni kiriting:", reply_markup=back_keyboard())
-            return ENTER_PRICE
-        else:
-            await update.message.reply_text("Tumanni tanlang:", reply_markup=districts_keyboard(context.user_data['to_region']))
-            return TO_DISTRICT
     if txt == BTN_POST:
         context.user_data['seats'] = "post"
-        await update.message.reply_text("Qachon ketasiz?", reply_markup=when_keyboard())
-        return WHEN
-    if txt not in SEATS_BUTTONS:
+    elif txt not in SEATS_BUTTONS:
         await update.message.reply_text("1 dan 6 gacha son tanlang yoki Pochta tugmasini bosing:", reply_markup=seats_keyboard())
         return CHOOSE_SEATS
-    context.user_data['seats'] = txt
+    else:
+        context.user_data['seats'] = txt
     await update.message.reply_text("Qachon ketasiz?", reply_markup=when_keyboard())
     return WHEN
 
 async def when_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Yo‘lovchilar sonini yoki pochta jo‘natishni tanlang:", reply_markup=seats_keyboard())
-        return CHOOSE_SEATS
     if txt not in [BTN_NOW, BTN_PLAN]:
         await update.message.reply_text("Hozir yoki Rejalashtirish tanlang:", reply_markup=when_keyboard())
         return WHEN
@@ -386,9 +325,6 @@ async def when_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def when_plan_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Qachon ketasiz?", reply_markup=when_keyboard())
-        return WHEN
     today = datetime.now()
     if txt == BTN_TODAY:
         context.user_data['when_date'] = format_date(today)
@@ -415,9 +351,6 @@ async def when_plan_date(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def when_plan_hour(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Sanani tanlang:", reply_markup=date_keyboard())
-        return WHEN_PLAN_DATE
     if not txt.endswith(":00") or len(txt) != 5:
         await update.message.reply_text("Soatni HH:00 formatida tanlang (masalan, 14:00):", reply_markup=hour_keyboard())
         return WHEN_PLAN_HOUR
@@ -468,7 +401,6 @@ async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(format_trip_info(trip))
     rm = post_route_menu_driver() if role == "driver" else post_route_menu_passenger()
     await update.message.reply_text("Endi quyidagilarni bajaring:", reply_markup=rm)
-    # Notify matching users
     user = get_user(user_id)
     if not user:
         await update.message.reply_text("Foydalanuvchi ma'lumotlari topilmadi.")
@@ -505,15 +437,6 @@ async def after_route_router(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if not role:
         await update.message.reply_text("Xatolik: Rol topilmadi. Iltimos, qaytadan boshlang.", reply_markup=role_keyboard())
         return CHOOSE_ROLE
-    if txt == BTN_BACK:
-        if user_id in ADMIN_IDS:
-            await update.message.reply_text("Admin menyusi:", reply_markup=admin_menu_keyboard())
-            return ADMIN_MENU
-        user = get_user(user_id)
-        if user:
-            await update.message.reply_text("Profil menyusi:", reply_markup=show_main_menu_by_role(user['role']))
-            return ConversationHandler.END
-        return await start(update, context)
     if role == "driver":
         if txt == BTN_SEE_PASSENGERS:
             return await see_passengers(update, context)
@@ -544,23 +467,20 @@ async def see_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not trip:
         await update.message.reply_text("Yo‘nalish topilmadi. Iltimos, yo‘nalish tanlang.")
         return await choose_route(update, context)
-    try:
-        matches = get_matching_passengers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
-        if not matches:
-            await update.message.reply_text("Kechirasiz, siz tanlagan yo‘nalish bo‘yicha hozircha yo‘lovchi topilmadi.", reply_markup=post_route_menu_driver())
-            return AFTER_ROUTE_MENU
-        lines = []
-        for m in matches:
-            match_user = get_user(m['user_id'])
-            if match_user:
-                lines.append(format_match_info(match_user, m, is_driver=False))
-        if not lines:
-            await update.message.reply_text("Kechirasiz, mos yo‘lovchilar topilmadi.", reply_markup=post_route_menu_driver())
-            return AFTER_ROUTE_MENU
-        await update.message.reply_text("\n\n".join(lines), reply_markup=post_route_menu_driver())
-    except Exception as e:
-        await update.message.reply_text(f"Yo‘lovchilarni ko‘rishda xato: {e}. Iltimos, qaytadan urinib ko‘ring.", reply_markup=post_route_menu_driver())
+    matches = get_matching_passengers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
+    if not matches:
+        await update.message.reply_text("Kechirasiz, siz tanlagan yo‘nalish bo‘yicha hozircha yo‘lovchi topilmadi.", reply_markup=post_route_menu_driver())
         return AFTER_ROUTE_MENU
+    lines = []
+    for m in matches:
+        match_user = get_user(m['user_id'])
+        if match_user:
+            lines.append(format_match_info(match_user, m, is_driver=False))
+    if not lines:
+        await update.message.reply_text("Kechirasiz, mos yo‘lovchilar topilmadi.", reply_markup=post_route_menu_driver())
+        return AFTER_ROUTE_MENU
+    await update.message.reply_text("\n\n".join(lines), reply_markup=post_route_menu_driver())
+    return AFTER_ROUTE_MENU
 
 async def see_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -568,23 +488,20 @@ async def see_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not trip:
         await update.message.reply_text("Yo‘nalish topilmadi. Iltimos, yo‘nalish tanlang.")
         return await choose_route(update, context)
-    try:
-        matches = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
-        if not matches:
-            await update.message.reply_text("Kechirasiz, siz tanlagan yo‘nalish bo‘yicha hozircha haydovchi topilmadi.", reply_markup=post_route_menu_passenger())
-            return AFTER_ROUTE_MENU
-        lines = []
-        for m in matches:
-            match_user = get_user(m['user_id'])
-            if match_user:
-                lines.append(format_match_info(match_user, m, is_driver=True))
-        if not lines:
-            await update.message.reply_text("Kechirasiz, mos haydovchilar topilmadi.", reply_markup=post_route_menu_passenger())
-            return AFTER_ROUTE_MENU
-        await update.message.reply_text("\n\n".join(lines), reply_markup=post_route_menu_passenger())
-    except Exception as e:
-        await update.message.reply_text(f"Haydovchilarni ko‘rishda xato: {e}. Iltimos, qaytadan urinib ko‘ring.", reply_markup=post_route_menu_passenger())
+    matches = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
+    if not matches:
+        await update.message.reply_text("Kechirasiz, siz tanlagan yo‘nalish bo‘yicha hozircha haydovchi topilmadi.", reply_markup=post_route_menu_passenger())
         return AFTER_ROUTE_MENU
+    lines = []
+    for m in matches:
+        match_user = get_user(m['user_id'])
+        if match_user:
+            lines.append(format_match_info(match_user, m, is_driver=True))
+    if not lines:
+        await update.message.reply_text("Kechirasiz, mos haydovchilar topilmadi.", reply_markup=post_route_menu_passenger())
+        return AFTER_ROUTE_MENU
+    await update.message.reply_text("\n\n".join(lines), reply_markup=post_route_menu_passenger())
+    return AFTER_ROUTE_MENU
 
 # ------------------ HANDLE LOCATION ------------------
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -597,49 +514,32 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not trip:
         await update.message.reply_text("Yo‘nalish topilmadi. Iltimos, yo‘nalish tanlang.")
         return await choose_route(update, context)
-    try:
-        drivers = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
-        if not drivers:
-            await update.message.reply_text("Hozircha mos haydovchi topilmadi.", reply_markup=post_route_menu_passenger())
-            return AFTER_ROUTE_MENU
-        for d in drivers[:1]:
-            driver_id = d['user_id']
-            await context.bot.send_location(chat_id=driver_id, latitude=loc.latitude, longitude=loc.longitude)
-            await context.bot.send_message(chat_id=driver_id, text=f"Yo‘lovchining geolokatsiyasi (ID: {user_id})")
-            await update.message.reply_text("Geolokatsiya tanlangan haydovchiga yuborildi.", reply_markup=post_route_menu_passenger())
-            return AFTER_ROUTE_MENU
-    except Exception as e:
-        print(f"Xato geolokatsiya yuborishda (haydovchi {driver_id}): {e}")
-        await update.message.reply_text(f"Geolokatsiyani yuborishda xato: {e}. Iltimos, qaytadan urinib ko‘ring.", reply_markup=post_route_menu_passenger())
-    await update.message.reply_text("Geolokatsiyani yuborishda xatolik yuz berdi.", reply_markup=post_route_menu_passenger())
+    drivers = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
+    if not drivers:
+        await update.message.reply_text("Hozircha mos haydovchi topilmadi.", reply_markup=post_route_menu_passenger())
+        return AFTER_ROUTE_MENU
+    for d in drivers[:1]:
+        driver_id = d['user_id']
+        await context.bot.send_location(chat_id=driver_id, latitude=loc.latitude, longitude=loc.longitude)
+        await context.bot.send_message(chat_id=driver_id, text=f"Yo‘lovchining geolokatsiyasi (ID: {user_id})")
+    await update.message.reply_text("Geolokatsiya tanlangan haydovchiga yuborildi.", reply_markup=post_route_menu_passenger())
     return AFTER_ROUTE_MENU
 
 # ------------------ CHANGE SEATS (driver) ------------------
 async def change_seats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Tanlang:", reply_markup=post_route_menu_driver())
-        return AFTER_ROUTE_MENU
     if txt == BTN_POST:
         context.user_data['seats'] = "post"
-        try:
-            update_seats(update.effective_user.id, "post")
-            await update.message.reply_text("Pochta jo‘natish tanlandi.", reply_markup=post_route_menu_driver())
-            return AFTER_ROUTE_MENU
-        except Exception as e:
-            await update.message.reply_text(f"O‘rinlarni yangilashda xato: {e}. Iltimos, qaytadan urinib ko‘ring.", reply_markup=post_route_menu_driver())
-            return AFTER_ROUTE_MENU
-    if txt not in SEATS_BUTTONS:
+        update_seats(update.effective_user.id, "post")
+        await update.message.reply_text("Pochta jo‘natish tanlandi.", reply_markup=post_route_menu_driver())
+    elif txt not in SEATS_BUTTONS:
         await update.message.reply_text("1 dan 6 gacha son tanlang yoki Pochta tugmasini bosing:", reply_markup=seats_keyboard())
         return CHANGE_SEATS_STATE
-    seats = txt
-    try:
+    else:
+        seats = txt
         update_seats(update.effective_user.id, seats)
         await update.message.reply_text("Bo‘sh o‘rinlar soni yangilandi.", reply_markup=post_route_menu_driver())
-        return AFTER_ROUTE_MENU
-    except Exception as e:
-        await update.message.reply_text(f"O‘rinlarni yangilashda xato: {e}. Iltimos, qaytadan urinib ko‘ring.", reply_markup=post_route_menu_driver())
-        return AFTER_ROUTE_MENU
+    return AFTER_ROUTE_MENU
 
 # ------------------ HELP / ADMIN ------------------
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -648,37 +548,21 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def handle_help_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    user_id = update.effective_user.id
-    if txt == BTN_BACK:
-        if user_id in ADMIN_IDS:
-            await update.message.reply_text("Admin menyusi:", reply_markup=admin_menu_keyboard())
-            return ADMIN_MENU
-        user = get_user(user_id)
-        if user:
-            await update.message.reply_text("Profil menyusi:", reply_markup=show_main_menu_by_role(user['role']))
-            return ConversationHandler.END
-        return await start(update, context)
     username = update.effective_user.username or "Anonim"
     if not ADMIN_IDS:
         await update.message.reply_text("Adminlar topilmadi. Iltimos, .env faylida ADMINS=... qo‘shing.")
         return ConversationHandler.END
     for admin_id in ADMIN_IDS:
-        try:
-            await context.bot.send_message(
-                chat_id=admin_id,
-                text=f"Foydalanuvchi @{username} (ID: {user_id}) dan xabar:\n{txt}\nJavob berish uchun: /reply {user_id}",
-                disable_notification=True
-            )
-        except Exception as e:
-            print(f"Xato yordam xabarini yuborishda (admin {admin_id}): {e}")
-            await update.message.reply_text(f"Xabarni adminlarga yuborishda xato: {e}. Iltimos, qaytadan urinib ko‘ring.")
-            return ConversationHandler.END
+        await context.bot.send_message(
+            chat_id=admin_id,
+            text=f"Foydalanuvchi @{username} (ID: {update.effective_user.id}) dan xabar:\n{txt}\nJavob berish uchun: /reply {update.effective_user.id}",
+            disable_notification=True
+        )
     await update.message.reply_text("Xabaringiz adminlarga yuborildi. Javobni kuting.")
     return ConversationHandler.END
 
 async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    print(f"Admin panel accessed by user_id: {user_id}, is_admin: {user_id in ADMIN_IDS}")  # Debug
     if user_id not in ADMIN_IDS:
         await update.message.reply_text("Sizda admin ruxsati yo‘q.")
         return ConversationHandler.END
@@ -687,7 +571,6 @@ async def admin_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def reply_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
-    print(f"Reply command from user_id: {user_id}, is_admin: {user_id in ADMIN_IDS}")  # Debug
     if user_id not in ADMIN_IDS:
         await update.message.reply_text("Sizda admin ruxsati yo‘q.")
         return ConversationHandler.END
@@ -707,18 +590,12 @@ async def reply_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return ConversationHandler.END
         message_text = update.message.text if update.message.text else ""
         full_reply = f"Admin javobi:\n{message_text}\n{reply_text}" if message_text and reply_text else f"Admin javobi:\n{message_text or reply_text}"
-        try:
-            await context.bot.send_message(
-                chat_id=target_user_id,
-                text=full_reply,
-                disable_notification=True
-            )
-            await update.message.reply_text(f"Xabar {target_user_id} foydalanuvchiga yuborildi.", reply_markup=admin_menu_keyboard())
-        except Exception as e:
-            await update.message.reply_text(
-                f"Foydalanuvchiga xabar yuborishda xato: {e}. Ehtimol, foydalanuvchi botni bloklagan yoki chat faol emas.",
-                reply_markup=admin_menu_keyboard()
-            )
+        await context.bot.send_message(
+            chat_id=target_user_id,
+            text=full_reply,
+            disable_notification=True
+        )
+        await update.message.reply_text(f"Xabar {target_user_id} foydalanuvchiga yuborildi.", reply_markup=admin_menu_keyboard())
     except ValueError:
         await update.message.reply_text(
             "Xato: user_id raqam bo‘lishi kerak. To‘g‘ri format: /reply <user_id>",
@@ -730,41 +607,21 @@ async def reply_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    user_id = update.effective_user.id
-    print(f"Admin menu input: {txt}, user_id: {user_id}")  # Debug uchun tugma matnini ko‘rish
-    if txt == BTN_BACK:
-        user = get_user(user_id)
-        if user:
-            await update.message.reply_text("Profil menyusi:", reply_markup=show_main_menu_by_role(user['role']))
-            return ConversationHandler.END
-        return await start(update, context)
     if txt == BTN_ADMIN_STATS:
-        try:
-            s = get_stats()
-            drivers_count, passengers_count = s if s else (0, 0)
-            await update.message.reply_text(
-                f"Statistika:\nHaydovchilar: {drivers_count}\nYo‘lovchilar: {passengers_count}",
-                reply_markup=admin_menu_keyboard()
-            )
-        except Exception as e:
-            await update.message.reply_text(f"Statistikani olishda xato: {e}.", reply_markup=admin_menu_keyboard())
-        return ADMIN_MENU
+        s = get_stats()
+        drivers_count, passengers_count = s if s else (0, 0)
+        await update.message.reply_text(
+            f"Statistika:\nHaydovchilar: {drivers_count}\nYo‘lovchilar: {passengers_count}",
+            reply_markup=admin_menu_keyboard()
+        )
     elif txt == BTN_ADMIN_DRIVERS:
-        try:
-            ads = get_all_drivers() or []
-            drivers_text = "\n".join([f"{d[1]} - {d[2]}" for d in ads]) if ads else "Yo‘q"
-            await update.message.reply_text(f"Haydovchilar:\n{drivers_text}", reply_markup=admin_menu_keyboard())
-        except Exception as e:
-            await update.message.reply_text(f"Haydovchilarni olishda xato: {e}.", reply_markup=admin_menu_keyboard())
-        return ADMIN_MENU
+        ads = get_all_drivers() or []
+        drivers_text = "\n".join([f"{d[1]} - {d[2]}" for d in ads]) if ads else "Yo‘q"
+        await update.message.reply_text(f"Haydovchilar:\n{drivers_text}", reply_markup=admin_menu_keyboard())
     elif txt == BTN_ADMIN_PASSENGERS:
-        try:
-            aps = get_all_passengers() or []
-            passengers_text = "\n".join([f"{p[1]} - {p[2]}" for p in aps]) if aps else "Yo‘q"
-            await update.message.reply_text(f"Yo‘lovchilar:\n{passengers_text}", reply_markup=admin_menu_keyboard())
-        except Exception as e:
-            await update.message.reply_text(f"Yo‘lovchilarni olishda xato: {e}.", reply_markup=admin_menu_keyboard())
-        return ADMIN_MENU
+        aps = get_all_passengers() or []
+        passengers_text = "\n".join([f"{p[1]} - {p[2]}" for p in aps]) if aps else "Yo‘q"
+        await update.message.reply_text(f"Yo‘lovchilar:\n{passengers_text}", reply_markup=admin_menu_keyboard())
     elif txt == BTN_ADMIN_REPLY:
         await update.message.reply_text(
             "Foydalanuvchiga xabar yuborish uchun:\n/reply <user_id>\nKeyin xabarni yozing yoki orqaga suring.",
@@ -776,54 +633,34 @@ async def admin_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Admin menyusi:", reply_markup=admin_menu_keyboard())
-        return ADMIN_MENU
-    try:
-        parts = txt.split(" ", 1)
-        if len(parts) < 1:
-            await update.message.reply_text(
-                "Iltimos, to‘g‘ri formatda kiriting: /reply <user_id>\nKeyin xabarni yozing yoki orqaga suring.",
-                reply_markup=back_keyboard()
-            )
-            return ADMIN_REPLY
-        target_user_id = int(parts[0])
-        reply_text = parts[1] if len(parts) > 1 else ""
-        user = get_user(target_user_id)
-        if not user:
-            await update.message.reply_text(f"Foydalanuvchi ID {target_user_id} topilmadi. Iltimos, to‘g‘ri ID kiriting.", reply_markup=admin_menu_keyboard())
-            return ADMIN_MENU
-        message_text = update.message.text if update.message.text else ""
-        full_reply = f"Admin javobi:\n{message_text}\n{reply_text}" if message_text and reply_text else f"Admin javobi:\n{message_text or reply_text}"
-        try:
-            await context.bot.send_message(
-                chat_id=target_user_id,
-                text=full_reply,
-                disable_notification=True
-            )
-            await update.message.reply_text(f"Xabar {target_user_id} foydalanuvchiga yuborildi.", reply_markup=admin_menu_keyboard())
-            return ADMIN_MENU
-        except Exception as e:
-            await update.message.reply_text(
-                f"Foydalanuvchiga xabar yuborishda xato: {e}. Ehtimol, foydalanuvchi botni bloklagan yoki chat faol emas.",
-                reply_markup=admin_menu_keyboard()
-            )
-            return ADMIN_MENU
-    except ValueError:
+    parts = txt.split(" ", 1)
+    if len(parts) < 1:
         await update.message.reply_text(
-            "Xato: user_id raqam bo‘lishi kerak. To‘g‘ri format: /reply <user_id>",
+            "Iltimos, to‘g‘ri formatda kiriting: /reply <user_id>\nKeyin xabarni yozing yoki orqaga suring.",
             reply_markup=back_keyboard()
         )
         return ADMIN_REPLY
-    except Exception as e:
-        await update.message.reply_text(f"Xato: {e}. Iltimos, to‘g‘ri formatda kiriting.", reply_markup=admin_menu_keyboard())
+    target_user_id = int(parts[0])
+    reply_text = parts[1] if len(parts) > 1 else ""
+    user = get_user(target_user_id)
+    if not user:
+        await update.message.reply_text(f"Foydalanuvchi ID {target_user_id} topilmadi. Iltimos, to‘g‘ri ID kiriting.", reply_markup=admin_menu_keyboard())
         return ADMIN_MENU
+    message_text = update.message.text if update.message.text else ""
+    full_reply = f"Admin javobi:\n{message_text}\n{reply_text}" if message_text and reply_text else f"Admin javobi:\n{message_text or reply_text}"
+    await context.bot.send_message(
+        chat_id=target_user_id,
+        text=full_reply,
+        disable_notification=True
+    )
+    await update.message.reply_text(f"Xabar {target_user_id} foydalanuvchiga yuborildi.", reply_markup=admin_menu_keyboard())
+    return ADMIN_MENU
 
 # ------------------ MAIN ------------------
 def main():
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN topilmadi. .env faylida BOT_TOKEN=... deb qo‘ying.")
-
+    
     # Ma'lumotlar bazasini ishga tushirish
     init_db()
 
@@ -832,14 +669,14 @@ def main():
     # Webhook sozlamalari
     port = int(os.getenv("PORT", 5000))  # Render'da PORT environment o'zgaruvchisi
     path = os.getenv("PATH", "webhook").replace("\\", "/").strip()  # Noto'g'ri qochishlarni tozalash
-    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL', 'localhost')}/{path}"  # Xavfsiz URL
-    
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{path}"  # Render uchun faqat tashqi URL
+
     # Webhook'ni sozlash
     app.run_webhook(
-       listen="0.0.0.0",  # Barcha ulanishlarni qabul qilish
-       port=port,         # Port
-       url_path=path,     # Tozalangan yo'l
-       webhook_url=webhook_url  # Tashqi URL
+        listen="0.0.0.0",  # Barcha ulanishlarni qabul qilish
+        port=port,         # Port
+        url_path=path,     # Tozalangan yo'l
+        webhook_url=webhook_url  # Tashqi URL
     )
 
     start_conv = ConversationHandler(
