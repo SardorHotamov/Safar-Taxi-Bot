@@ -1024,24 +1024,24 @@ def main():
     app.add_handler(CommandHandler("reply", reply_command))
 
     # Render uchun webhook rejimi
-    #print("Bot webhook rejimida ishga tushdi...")
-    #port = int(os.getenv("PORT", 5000))
-    #path = os.getenv("PATH", "webhook").replace("\\", "/").strip()
-    #webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{path}"
+    print("Bot webhook rejimida ishga tushdi...")
+    port = int(os.getenv("PORT", 5000))
+    path = os.getenv("PATH", "webhook").replace("\\", "/").strip()
+    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{path}"
 
-    #app.run_webhook(
-        #listen="0.0.0.0",
-        #port=port,
-        #url_path=path,
-        #webhook_url=webhook_url
-    #)
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=port,
+        url_path=path,
+        webhook_url=webhook_url
+    )
 
     import threading
     scheduler_thread = threading.Thread(target=run_schedule, daemon=True)
     scheduler_thread.start()
 
-    print("Bot polling rejimida ishga tushdi...")
-    app.run_polling()
+    #print("Bot polling rejimida ishga tushdi...")
+    #app.run_polling()
 
 if __name__ == "__main__":
     main()
