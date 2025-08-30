@@ -77,5 +77,5 @@ def admin_menu_keyboard():
     return ReplyKeyboardMarkup([
         [KeyboardButton("Foydalanuvchilar soni"), KeyboardButton("Haydovchilar ma'lumotlari")],
         [KeyboardButton("Yo‘lovchilar ma'lumotlari"), KeyboardButton("Xabar yuborish")],
-        [KeyboardButton("Orqaga")]
+        [KeyboardButton("Foydalanuvchini o‘chirish"), KeyboardButton("Orqaga")]
     ], resize_keyboard=True)

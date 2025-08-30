@@ -1,27 +1,29 @@
-import os
 from pymongo import MongoClient
+from pymongo.errors import ServerSelectionTimeoutError  # Tuzatildi
+import os
+from typing import Optional, Tuple, List
 from dotenv import load_dotenv
+from datetime import datetime, timedelta
 
 load_dotenv()
+
 MONGODB_URI = os.getenv("MONGODB_URI")
-
 if not MONGODB_URI:
-    raise RuntimeError("MONGODB_URI topilmadi. .env faylida MONGODB_URI ni qo'shing.")
+    raise RuntimeError("MONGODB_URI topilmadi. .env faylida MONGODB_URI=... deb qo‘ying.")
 
-client = MongoClient(MONGODB_URI)
 try:
+    client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
     client.server_info()  # Ulanishni tekshirish
-except Exception as e:
+    db = client['SafarTaxiBot']
+except ServerSelectionTimeoutError as e:  # Tuzatildi
     raise RuntimeError(f"MongoDB ulanishda xatolik: {e}")
 
-db = client.get_database("safartaxi")
-users_collection = db["users"]
-trips_collection = db["trips"]
-
 def init_db():
-    pass
+    """Ma'lumotlar bazasini ishga tushirish (MongoDB avtomatik yaratiladi)."""
+    pass  # MongoDB'da jadval (collection) avtomatik yaratiladi
 
-def save_user(user_id, role, full_name, phone, car_model=None, car_color=None, car_number=None):
+def save_user(user_id: int, role: str, full_name: str, phone: str, car_model: Optional[str] = None, car_color: Optional[str] = None, car_number: Optional[str] = None):
+    """Foydalanuvchini saqlash."""
     user_data = {
         "user_id": user_id,
         "role": role,
@@ -31,12 +33,11 @@ def save_user(user_id, role, full_name, phone, car_model=None, car_color=None, c
         "car_color": car_color,
         "car_number": car_number
     }
-    users_collection.update_one({"user_id": user_id}, {"$set": user_data}, upsert=True)
+    db.users.replace_one({"user_id": user_id}, user_data, upsert=True)
 
-def get_user(user_id):
-    return users_collection.find_one({"user_id": user_id})
-
-def save_trip(user_id, role, from_region, from_district, to_region, to_district, mahalla, price, seats, when_mode, when_date, when_time):
+def save_trip(user_id: int, role: str, from_region: str, from_district: str, to_region: str, to_district: str,
+              mahalla: Optional[str], price: Optional[int], seats: str, when_mode: str, when_date: Optional[str], when_time: Optional[str]):
+    """Sayohatni saqlash."""
     trip_data = {
         "user_id": user_id,
         "role": role,
@@ -51,44 +52,106 @@ def save_trip(user_id, role, from_region, from_district, to_region, to_district,
         "when_date": when_date,
         "when_time": when_time
     }
-    trips_collection.update_one({"user_id": user_id}, {"$set": trip_data}, upsert=True)
+    db.trips.replace_one({"user_id": user_id}, trip_data, upsert=True)
 
-def get_user_trip(user_id):
-    return trips_collection.find_one({"user_id": user_id})
+def delete_expired_trips():
+    threshold = datetime.utcnow() - timedelta(hours=24)
+    expired_trips = db.trips.find({"created_at": {"$lt": threshold}})
+    for trip in expired_trips:
+        db.users.delete_one({"user_id": trip["user_id"]})
+        db.trips.delete_one({"user_id": trip["user_id"]})
+    return len(list(expired_trips))
 
-def update_seats(user_id, seats):
-    trips_collection.update_one({"user_id": user_id}, {"$set": {"seats": seats}})
+def get_user(user_id: int) -> Optional[dict]:
+    """Foydalanuvchi ma'lumotlarini olish."""
+    user = db.users.find_one({"user_id": user_id})
+    if user:
+        return {
+            'user_id': user['user_id'],
+            'role': user['role'],
+            'full_name': user['full_name'],
+            'phone': user['phone'],
+            'car_model': user['car_model'],
+            'car_color': user['car_color'],
+            'car_number': user['car_number']
+        }
+    return None
 
-def delete_trip(user_id):
-    trips_collection.delete_one({"user_id": user_id})
+def get_user_trip(user_id: int) -> Optional[dict]:
+    """Foydalanuvchining sayohat ma'lumotlarini olish."""
+    trip = db.trips.find_one({"user_id": user_id})
+    if trip:
+        return {
+            'user_id': trip['user_id'],
+            'role': trip['role'],
+            'from_region': trip['from_region'],
+            'from_district': trip['from_district'],
+            'to_region': trip['to_region'],
+            'to_district': trip['to_district'],
+            'mahalla': trip['mahalla'],
+            'price': trip['price'],
+            'seats': trip['seats'],
+            'when_mode': trip['when_mode'],
+            'when_date': trip['when_date'],
+            'when_time': trip['when_time']
+        }
+    return None
 
-def get_matching_passengers(from_region, from_district, to_region, to_district):
-    return list(trips_collection.find({
+def get_stats() -> Tuple[int, int]:
+    """Statistikani olish."""
+    drivers_count = db.users.count_documents({"role": "driver"})
+    passengers_count = db.users.count_documents({"role": "passenger"})
+    return drivers_count, passengers_count    
+
+def get_all_drivers() -> List[Tuple[int, str, str]]:
+    """Barcha haydovchilarni olish."""
+    drivers = db.users.find({"role": "driver"}, {"user_id": 1, "full_name": 1, "phone": 1})
+    return [(d["user_id"], d["full_name"], d["phone"]) for d in drivers]
+
+def get_all_passengers() -> List[Tuple[int, str, str]]:
+    """Barcha yo'lovchilarni olish."""
+    passengers = db.users.find({"role": "passenger"}, {"user_id": 1, "full_name": 1, "phone": 1})
+    return [(p["user_id"], p["full_name"], p["phone"]) for p in passengers]
+
+def get_matching_passengers(from_region: str, from_district: str, to_region: str, to_district: str) -> List[Tuple[int]]:
+    """Mos yo'lovchilarni topish."""
+    passengers = db.trips.find({
         "role": "passenger",
         "from_region": from_region,
         "from_district": from_district,
         "to_region": to_region,
         "to_district": to_district
-    }))
+    }, {"user_id": 1})
+    return [(p["user_id"],) for p in passengers]
 
-def get_matching_drivers(from_region, from_district, to_region, to_district):
-    return list(trips_collection.find({
+def get_matching_drivers(from_region: str, from_district: str, to_region: str, to_district: str) -> List[Tuple[int]]:
+    """Mos haydovchilarni topish."""
+    drivers = db.trips.find({
         "role": "driver",
         "from_region": from_region,
         "from_district": from_district,
         "to_region": to_region,
         "to_district": to_district
-    }))
+    }, {"user_id": 1})
+    return [(d["user_id"],) for d in drivers]
 
-def get_stats():
-    drivers_count = users_collection.count_documents({"role": "driver"})
-    passengers_count = users_collection.count_documents({"role": "passenger"})
-    return drivers_count, passengers_count
+def update_seats(user_id: int, seats: str):
+    """Bo'sh o'rinlarni yangilash."""
+    db.trips.update_one({"user_id": user_id}, {"$set": {"seats": seats}})
 
-def get_all_drivers():
-    drivers = users_collection.find({"role": "driver"})
-    return [(d["user_id"], d["full_name"], d["phone"]) for d in drivers]
+def delete_trip(user_id: int):
+    """Sayohatni o'chirish."""
+    db.trips.delete_one({"user_id": user_id})
 
-def get_all_passengers():
-    passengers = users_collection.find({"role": "passenger"})
-    return [(p["user_id"], p["full_name"], p["phone"]) for p in passengers]
+def delete_user(user_id: int):
+    result = db.users.delete_one({"user_id": user_id})
+    return result.deleted_count    
+
+def get_user_count():
+    return db.users.count_documents({})  
+
+def get_driver_count():
+    return db.users.count_documents({"role": "driver"})
+
+def get_passenger_count():
+    return db.users.count_documents({"role": "passenger"})
