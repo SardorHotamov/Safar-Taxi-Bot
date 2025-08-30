@@ -41,6 +41,7 @@ from utils import is_valid_date, format_date, format_time
 # ------------------ ENV ------------------
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 ADMIN_IDS = set()
 env_admins = os.getenv("ADMINS", "")
 if env_admins:
@@ -933,7 +934,19 @@ def run_schedule():
     schedule.every(24).hours.do(lambda: asyncio.run(check_expired_trips()))
     while True:
         schedule.run_pending()
-        time.sleep(60)      
+        time.sleep(60)    
+
+async def set_webhook():
+    await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
+    print("Webhook sozlandi:", WEBHOOK_URL + "/webhook")
+
+def run_webhook():
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=int(os.getenv("PORT", 8443)),
+        url_path="webhook",
+        webhook_url=WEBHOOK_URL + "/webhook"
+    )  
 
 # ------------------ MAIN ------------------
 def main():
@@ -1036,6 +1049,10 @@ def main():
         webhook_url=webhook_url
     )
 
+
+    import asyncio
+    asyncio.run(set_webhook())
+    run_webhook()
     import threading
     scheduler_thread = threading.Thread(target=run_schedule, daemon=True)
     scheduler_thread.start()
