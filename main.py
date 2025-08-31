@@ -42,6 +42,7 @@ from utils import is_valid_date, format_date, format_time
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+PORT = int(os.getenv("PORT", 8443))
 ADMIN_IDS = set()
 env_admins = os.getenv("ADMINS", "")
 if env_admins:
