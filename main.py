@@ -946,7 +946,7 @@ def run_webhook():
         port=int(os.getenv("PORT", 8443)),
         url_path="webhook",
         webhook_url=WEBHOOK_URL + "/webhook"
-    )  
+    )
 
 # ------------------ MAIN ------------------
 def main():
@@ -979,21 +979,12 @@ def main():
     app.add_handler(start_conv)
 
     route_conv = ConversationHandler(
-        entry_points=[
-            MessageHandler(filters.Regex(f"^{BTN_EDIT_PROFILE}$"), edit_profile),  # To‘g‘ri ishlaydi
-            MessageHandler(filters.Regex(f"^{BTN_CHOOSE_ROUTE}$"), choose_route),
-            MessageHandler(
-                filters.Regex(f"^{BTN_SEE_PASSENGERS}$|^{BTN_CHANGE_SEATS}$|^{BTN_GO}$|^{BTN_SEE_DRIVERS}$|^{BTN_SEND_GEO}$|^{BTN_BACK}$"),
-                after_route_router
-            ),
-            MessageHandler(filters.Regex(f"^{BTN_HELP}$"), help_cmd),
-            CommandHandler("admin", admin_panel),
-            CommandHandler("delete_user", delete_user_command),
-        ],
+        entry_points=[CommandHandler("start", start)],
         states={
-            CHOOSE_ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_role)],
+            CHOOSE_ROLE: [MessageHandler(filters.Regex(f"^{BTN_DRIVER}$|^{BTN_PASSENGER}$"), choose_role)],
             REGISTER_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_name)],
             REGISTER_PHONE: [
+                MessageHandler(filters.Regex(f"^{BTN_POST}$"), register_phone_post),
                 MessageHandler(filters.CONTACT, register_phone),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, register_phone),
             ],
@@ -1020,14 +1011,13 @@ def main():
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_REPLY}$"), admin_reply),
                 MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start),
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
-        ],
+            ],
             ADMIN_REPLY: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
             "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
         },
         fallbacks=[
             MessageHandler(filters.Regex(f"^{BTN_BACK}$"), after_route_router),
             MessageHandler(filters.Regex(f"^{BTN_BACK_TO_MENU}$"), start),
-            
         ],
         per_chat=True,
     )
@@ -1036,29 +1026,14 @@ def main():
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
 
-    # Render uchun webhook rejimi
     print("Bot webhook rejimida ishga tushdi...")
-    port = int(os.getenv("PORT", 8000))
-    path = os.getenv("PATH", "webhook").replace("\\", "/").strip()
-    webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{path}"
-
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=port,
-        url_path=path,
-        webhook_url=webhook_url
-    )
-
-
-    import asyncio
-    asyncio.run(set_webhook())
-    run_webhook()
-    import threading
-    scheduler_thread = threading.Thread(target=run_schedule, daemon=True)
-    scheduler_thread.start()
 
     #print("Bot polling rejimida ishga tushdi...")
     #app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(set_webhook())  # Webhook’ni sozlash
+    run_webhook()  # Botni ishga tushirish
+    # Scheduler'ni o'chirish yoki ta'riflash kerak bo'lsa, quyida qo'shish mumkin
+    
