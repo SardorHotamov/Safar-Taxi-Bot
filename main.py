@@ -1036,4 +1036,3 @@ if __name__ == "__main__":
     asyncio.run(set_webhook())  # Webhook’ni sozlash
     run_webhook()  # Botni ishga tushirish
     # Scheduler'ni o'chirish yoki ta'riflash kerak bo'lsa, quyida qo'shish mumkin
-    
