@@ -7,4 +7,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+ENV PORT=8443
 CMD ["python", "main.py"]
