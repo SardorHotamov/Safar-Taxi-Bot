@@ -1038,7 +1038,7 @@ def main():
 
     # Render uchun webhook rejimi
     print("Bot webhook rejimida ishga tushdi...")
-    port = int(os.getenv("PORT", 5000))
+    port = int(os.getenv("PORT", 8000))
     path = os.getenv("PATH", "webhook").replace("\\", "/").strip()
     webhook_url = f"https://{os.getenv('RENDER_EXTERNAL_URL')}/{path}"
 
