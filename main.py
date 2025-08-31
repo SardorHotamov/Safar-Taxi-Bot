@@ -1042,7 +1042,6 @@ def main():
     #app.run_polling()
 
 if __name__ == "__main__":
-    main()
     import asyncio
     asyncio.run(set_webhook())  # Webhook’ni sozlash
     run_webhook()  # Botni ishga tushirish
