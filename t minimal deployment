@@ -1,0 +1,150 @@
+[33mcommit 505d6a04eb5e16c5e304fba766f3312fd56200a1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sun Aug 31 18:21:46 2025 +0400
+
+    Update main.py for deployment fix
+
+main.py
+
+[33mcommit c1f3b81bc6c338340dc6e5b48d6f2e523d26b6f3[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sun Aug 31 18:10:53 2025 +0400
+
+    Remove colors.sh completely for Render deployment
+
+main.py
+
+[33mcommit e288abd3cc408fb9697f89a3a5c4aebc3c48b324[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sun Aug 31 16:23:18 2025 +0400
+
+    Fix webhook and main function structure
+
+main.py
+
+[33mcommit 44e331ab592b00464aee7caceed9e74e74fcc8e9[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sun Aug 31 16:10:44 2025 +0400
+
+    Fix webhook and main function structure
+
+main.py
+
+[33mcommit 068a9e764f31d62a3ea194fc608f3304e7897d8f[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sun Aug 31 13:10:27 2025 +0400
+
+    First commit: Safar Taxi Bot initial version
+
+main.py
+
+[33mcommit 10dd9281047147b359103b806a62ccd6023d5d11[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 30 21:45:00 2025 +0400
+
+    Ensure schedule is in requirements.txt
+
+requirements.txt
+
+[33mcommit 13ed069edd932828b92a25caa316876453c02aee[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 30 21:02:11 2025 +0400
+
+    Fix tput error by removing colors.sh
+
+Procfile
+main.py
+
+[33mcommit 6d52c3d0dfcffc4d67e186c2b6745920f7e627c5[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 30 20:35:27 2025 +0400
+
+    Initial commit with Render-ready code
+
+main.py
+
+[33mcommit a8a11b3ce4c08a07d6e1a19da73d443417bc5dfa[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 30 20:18:39 2025 +0400
+
+    Initial commit with Render-ready code
+
+database.py
+keyboards.py
+main.py
+set_webhook.py
+
+[33mcommit d3ed7604a9bf2faeba5ff2c74a695483dbcc7fa3[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Mon Aug 25 10:35:16 2025 +0400
+
+    Added requirements.txt
+
+requirements.txt
+
+[33mcommit cf46e7db1c291c9167d4f43e83215b7bb16d9e0f[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Mon Aug 25 09:47:55 2025 +0400
+
+    Initial commit with all project files for new repository
+
+.gitignore
+database.py
+main.py
+
+[33mcommit e80a163a5f24417de309e8806a73b47ca6c5e90a[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 23 23:27:03 2025 +0400
+
+    Set runtime to Python 3.11
+
+runtime.txt
+
+[33mcommit 33049e67f7e893d4e88bedc8a0137deaf640d557[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 23 23:11:29 2025 +0400
+
+    Added runtime.txt for Python 3.11
+
+runtime.txt
+
+[33mcommit e96c610706630fce200e8cc220a4e8cec3d0915f[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 23 22:45:14 2025 +0400
+
+    Initial commit
+
+main.py
+requirements.txt
+set_webhook.py
+
+[33mcommit d133ef922bfb14b14e4d17e2d929e77f6793bb9c[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 23 21:17:23 2025 +0400
+
+    Added webhook support
+
+main.py
+
+[33mcommit f7bfb0628f314ab681aa29a49d7fb8b8c5ce208e[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 23 19:09:27 2025 +0400
+
+    Add pymongo to requirements.txt
+
+requirements.txt
+
+[33mcommit ae64abdaaf3630907b5e258a2441b9bb821051a7[m
+Author: Sardor <asilziyogroup@gmail.com>
+Date:   Sat Aug 23 16:48:01 2025 +0400
+
+    SafarTaxiBot initial code
+
+.gitignore
+Procfile
+database.py
+keyboards.py
+main.py
+regions.py
+requirements.txt
+utils.py
