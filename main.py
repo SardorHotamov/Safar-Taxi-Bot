@@ -963,7 +963,7 @@ def main():
         logger.info("Ilova ishga tushmoqda")
         app = Application.builder().token(BOT_TOKEN).build()  # app ni bu yerda aniqlaymiz
         logger.info("Application obyekti yaratildi")
-
+        
     start_conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
