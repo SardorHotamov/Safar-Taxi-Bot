@@ -19,8 +19,9 @@ except ServerSelectionTimeoutError as e:  # Tuzatildi
     raise RuntimeError(f"MongoDB ulanishda xatolik: {e}")
 
 def init_db():
-    """Ma'lumotlar bazasini ishga tushirish (MongoDB avtomatik yaratiladi)."""
-    pass  # MongoDB'da jadval (collection) avtomatik yaratiladi
+    logger.info("Ma'lumotlar bazasi ishga tushirilmoqda")
+    # Ma'lumotlar bazasini ishga tushirish logikasi
+    pass
 
 def save_user(user_id: int, role: str, full_name: str, phone: str, car_model: Optional[str] = None, car_color: Optional[str] = None, car_number: Optional[str] = None):
     """Foydalanuvchini saqlash."""
