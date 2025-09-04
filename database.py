@@ -20,8 +20,13 @@ except ServerSelectionTimeoutError as e:  # Tuzatildi
 
 def init_db():
     logger.info("Ma'lumotlar bazasi ishga tushirilmoqda")
-    # Ma'lumotlar bazasini ishga tushirish logikasi
-    pass
+    # Ma'lumotlar bazasi logikasi (masalan, SQLite)
+    try:
+        # Bu yerda DB kodini qo‘shing (agar mavjud bo‘lsa)
+        pass
+    except Exception as e:
+        logger.error(f"DB xatosi: {e}")
+        raise
 
 def save_user(user_id: int, role: str, full_name: str, phone: str, car_model: Optional[str] = None, car_color: Optional[str] = None, car_number: Optional[str] = None):
     """Foydalanuvchini saqlash."""

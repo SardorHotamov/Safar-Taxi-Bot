@@ -49,11 +49,6 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 10000))
 
-logger.info("Kod ishga tushdi")
-logger.info(f"BOT_TOKEN: {BOT_TOKEN[:5]}...")
-logger.info(f"WEBHOOK_URL: {WEBHOOK_URL}")
-logger.info(f"PORT: {PORT}")
-
 if not BOT_TOKEN or not WEBHOOK_URL:
     logger.error("BOT_TOKEN yoki WEBHOOK_URL noto‘g‘ri belgilangan!")
     raise ValueError("BOT_TOKEN yoki WEBHOOK_URL noto‘g‘ri belgilangan!")
@@ -958,12 +953,14 @@ async def set_webhook():
 
 # ------------------ MAIN ------------------
 def main():
-    logger.info("Ilova ishga tushmoqda")
-    app = Application.builder().token(BOT_TOKEN).build()
-    logger.info("Application obyekti yaratildi")
+    logger.info("Kod ishga tushdi")
+    logger.info(f"BOT_TOKEN: {BOT_TOKEN[:5]}...")
+    logger.info(f"WEBHOOK_URL: {WEBHOOK_URL}")
+    logger.info(f"PORT: {PORT}")
 
     init_db()
 
+    logger.info("Ilova ishga tushmoqda")
     app = Application.builder().token(BOT_TOKEN).build()
     logger.info("Application obyekti yaratildi")
 
