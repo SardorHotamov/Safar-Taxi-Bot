@@ -9,4 +9,4 @@ COPY . .
 
 # Render uchun default portni belgilash
 ENV PORT=10000
-CMD ["python", "main.py"]
+CMD ["python3", "main.py"]  # "python3" ni sinab ko‘rish
