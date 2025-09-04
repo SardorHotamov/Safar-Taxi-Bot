@@ -960,10 +960,9 @@ def main():
 
     try:
         init_db()
-        logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
-    except Exception as e:
-        logger.error(f"Ma'lumotlar bazasi xatosi: {e}")
-        raise
+        logger.info("Ilova ishga tushmoqda")
+        app = Application.builder().token(BOT_TOKEN).build()  # app ni bu yerda aniqlaymiz
+        logger.info("Application obyekti yaratildi")
 
     start_conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -1041,7 +1040,7 @@ def main():
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
 
-    print("Bot webhook rejimida ishga tushdi...")
+    logger.info("Bot webhook rejimida ishga tushdi...")
     app.run_webhook(
         listen="0.0.0.0",
         port=PORT,
