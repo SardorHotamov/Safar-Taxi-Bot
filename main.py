@@ -984,7 +984,7 @@ def main():
 
     route_conv = ConversationHandler(
         entry_points=[
-            MessageHandler(filters.Regex(f"^{BTN_EDIT_PROFILE}$"), edit_profile),  # To‘g‘ri ishlaydi
+            MessageHandler(filters.Regex(f"^{BTN_EDIT_PROFILE}$"), edit_profile),
             MessageHandler(filters.Regex(f"^{BTN_CHOOSE_ROUTE}$"), choose_route),
             MessageHandler(
                 filters.Regex(f"^{BTN_SEE_PASSENGERS}$|^{BTN_CHANGE_SEATS}$|^{BTN_GO}$|^{BTN_SEE_DRIVERS}$|^{BTN_SEND_GEO}$|^{BTN_BACK}$"),
@@ -1024,14 +1024,13 @@ def main():
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_REPLY}$"), admin_reply),
                 MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start),
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
-        ],
+            ],
             ADMIN_REPLY: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
-            "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
+            DELETE_USER_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
         },
         fallbacks=[
             MessageHandler(filters.Regex(f"^{BTN_BACK}$"), after_route_router),
             MessageHandler(filters.Regex(f"^{BTN_BACK_TO_MENU}$"), start),
-            
         ],
         per_chat=True,
     )
@@ -1040,6 +1039,11 @@ def main():
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
 
+    # Scheduler'ni boshqa thread'da ishga tushirish
+    import threading
+    scheduler_thread = threading.Thread(target=setup_scheduler, daemon=True)
+    scheduler_thread.start()
+
     logger.info("Bot webhook rejimida ishga tushdi...")
     app.run_webhook(
         listen="0.0.0.0",
@@ -1047,6 +1051,7 @@ def main():
         url_path="webhook",
         webhook_url=WEBHOOK_URL + "/webhook"
     )
+    app.idle()  # Ilovani faol ushlab turish
 
 if __name__ == "__main__":
     main()
