@@ -42,7 +42,7 @@ from utils import is_valid_date, format_date, format_time
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-PORT = int(os.getenv("PORT", 8443))
+PORT = int(os.getenv("PORT", 10000))
 ADMIN_IDS = set()
 env_admins = os.getenv("ADMINS", "")
 if env_admins:
@@ -944,7 +944,7 @@ async def set_webhook():
 def run_webhook():
     app.run_webhook(
         listen="0.0.0.0",
-        port=int(os.getenv("PORT", 8443)),
+        port=int(os.getenv("PORT", 10000)),
         url_path="webhook",
         webhook_url=WEBHOOK_URL + "/webhook"
     )
