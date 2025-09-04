@@ -958,11 +958,12 @@ def main():
     logger.info(f"WEBHOOK_URL: {WEBHOOK_URL}")
     logger.info(f"PORT: {PORT}")
 
-    init_db()
-
-    logger.info("Ilova ishga tushmoqda")
-    app = Application.builder().token(BOT_TOKEN).build()
-    logger.info("Application obyekti yaratildi")
+    try:
+        init_db()
+        logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
+    except Exception as e:
+        logger.error(f"Ma'lumotlar bazasi xatosi: {e}")
+        raise
 
     start_conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],

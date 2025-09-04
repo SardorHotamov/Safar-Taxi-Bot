@@ -4,8 +4,10 @@ import os
 from typing import Optional, Tuple, List
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+import logging
 
-load_dotenv()
+# Loglashni sozlash
+logger = logging.getLogger(__name__)
 
 MONGODB_URI = os.getenv("MONGODB_URI")
 if not MONGODB_URI:
