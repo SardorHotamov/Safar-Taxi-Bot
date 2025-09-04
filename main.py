@@ -944,16 +944,11 @@ async def set_webhook():
     await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
     print("Webhook sozlandi:", WEBHOOK_URL + "/webhook")
 
-def run_webhook():
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.getenv("PORT", 10000)),
-        url_path="webhook",
-        webhook_url=WEBHOOK_URL + "/webhook"
-    )
-
 # ------------------ MAIN ------------------
 def main():
+    if not BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN topilmadi. Render’da environment sozlamalarini tekshiring.")
+        
     # Ma'lumotlar bazasini ishga tushirish
     init_db()
 
@@ -1036,6 +1031,15 @@ def main():
     app.add_handler(CommandHandler("reply", reply_command))
 
     print("Bot webhook rejimida ishga tushdi...")
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path="webhook",
+        webhook_url=WEBHOOK_URL
+    )
+
+if __name__ == "__main__":
+    main()
 
     #print("Bot polling rejimida ishga tushdi...")
     #app.run_polling()
