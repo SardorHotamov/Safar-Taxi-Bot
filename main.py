@@ -32,6 +32,12 @@ from database import (
     delete_trip,
 )
 
+import logging
+
+# Loglashni sozlash
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # ------------------ REGIONS (import) ------------------
 from regions import regions
 
@@ -949,10 +955,14 @@ def main():
     if not BOT_TOKEN:
         raise RuntimeError("BOT_TOKEN topilmadi. Render’da environment sozlamalarini tekshiring.")
         
-    # Ma'lumotlar bazasini ishga tushirish
+    logger.info(f"BOT_TOKEN olingan: {BOT_TOKEN[:5]}...")  # Faqat boshini ko‘rsatamiz
+    logger.info(f"WEBHOOK_URL: {WEBHOOK_URL}")
+    logger.info(f"PORT: {PORT}")
+
     init_db()
 
     app = Application.builder().token(BOT_TOKEN).build()
+    logger.info("Application obyekti yaratildi")
 
     start_conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
