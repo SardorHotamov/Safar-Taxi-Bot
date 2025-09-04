@@ -39,15 +39,18 @@ from regions import regions
 from utils import is_valid_date, format_date, format_time
 
 # ------------------ ENV ------------------
-load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN") or os.getenv("TOKEN")
+load_dotenv()  # Faqat bir marta, kod boshida
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 10000))
+
+if not BOT_TOKEN or not WEBHOOK_URL:
+    raise ValueError("BOT_TOKEN yoki WEBHOOK_URL noto‘g‘ri belgilangan!")
+
 ADMIN_IDS = set()
 env_admins = os.getenv("ADMINS", "")
 if env_admins:
     ADMIN_IDS = {int(x.strip()) for x in env_admins.split(",") if x.strip().isdigit()}
-
 # ------------------ TEXT LABELS ------------------
 BTN_DRIVER = "Haydovchi"
 BTN_PASSENGER = "Yo‘lovchi"
@@ -951,11 +954,6 @@ def run_webhook():
 
 # ------------------ MAIN ------------------
 def main():
-    load_dotenv()
-    BOT_TOKEN = os.getenv("BOT_TOKEN")
-    if not BOT_TOKEN:
-        raise RuntimeError("BOT_TOKEN topilmadi. .env faylida BOT_TOKEN=... deb qo‘ying.")
-
     # Ma'lumotlar bazasini ishga tushirish
     init_db()
 
