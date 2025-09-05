@@ -48,6 +48,8 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from database import get_all_users, get_all_drivers, get_all_passengers
 
+BTN_BACK = "Orqaga"
+
 # ------------------ ENV ------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -937,14 +939,29 @@ async def delete_user_prompt(update: Update, context: ContextTypes.DEFAULT_TYPE)
     await update.message.reply_text("O‘chirish uchun user_id ni kiriting:")
     return "DELETE_USER_INPUT"
 
-async def delete_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = int(update.message.text)
-    from database import delete_user
-    deleted_count = delete_user(user_id)
-    if deleted_count > 0:
-        await update.message.reply_text(f"User ID {user_id} muvaffaqiyatli o‘chirildi.")
+async def delete_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Admin foydalanuvchini o'chirish uchun ID ni qabul qiladi."""
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        return ConversationHandler.END
+
+    text = update.message.text.strip()
+    if text == BTN_BACK:
+        await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
+        return ADMIN_MENU
+
+    try:
+        user_id = int(text)
+    except ValueError:
+        await update.message.reply_text("Iltimos, faqat foydalanuvchi ID sini raqam sifatida kiriting!")
+        return "DELETE_USER_INPUT"
+
+    # Foydalanuvchini o'chirish logikasi
+    success = delete_user(user_id)
+    if success:
+        await update.message.reply_text(f"Foydalanuvchi ID {user_id} muvaffaqiyatli o'chirildi!")
     else:
-        await update.message.reply_text(f"User ID {user_id} topilmadi.")
+        await update.message.reply_text(f"Foydalanuvchi ID {user_id} topilmadi yoki o'chirishda xatolik yuz berdi!")
     return ADMIN_MENU  
 
 async def check_expired_trips():
