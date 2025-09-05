@@ -1023,33 +1023,28 @@ start_conv = ConversationHandler(
 
 # ------------------ MAIN ------------------
 def main():
-    logger.info("Kod ishga tushdi")
-    logger.info(f"BOT_TOKEN: {BOT_TOKEN[:5]}...")
-    logger.info(f"WEBHOOK_URL: {WEBHOOK_URL}")
-    logger.info(f"PORT: {PORT}")
+    # Ma'lumotlar bazasini ishga tushirish
+    init_db()
+    logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
 
-    try:
-        init_db()
-        logger.info("Ilova ishga tushmoqda")
-        app = Application.builder().token(BOT_TOKEN).build()  # app ni bu yerda aniqlaymiz
-        logger.info("Application obyekti yaratildi")
-        
+    # Ilova obyekti
+    app = Application.builder().token(BOT_TOKEN).build()
+    logger.info("Application obyekti yaratildi")
 
-        app.add_handler(route_conv)
-        app.add_handler(start_conv)
+    # Handler larni qo'shish
+    app.add_handler(route_conv)
+    app.add_handler(start_conv)
+    app.add_handler(MessageHandler(filters.LOCATION, handle_location))
+    app.add_handler(CommandHandler("reply", reply_command))
 
-        app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-        app.add_handler(CommandHandler("reply", reply_command))
-
-        logger.info("Bot webhook rejimida ishga tushdi...")
-        app.run_webhook(
-            listen="0.0.0.0",
-            port=PORT,
-            url_path="webhook",
-            webhook_url=WEBHOOK_URL + "/webhook"
-        )
-
-        app.idle()  # Ilovani faol ushlab turish
+    # Webhook ni sozlash
+    logger.info("Bot webhook rejimida ishga tushdi...")
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path="webhook",
+        webhook_url=WEBHOOK_URL + "/webhook"
+    )
 
 if __name__ == "__main__":
     main()
