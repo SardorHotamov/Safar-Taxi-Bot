@@ -1035,21 +1035,21 @@ def main():
         logger.info("Application obyekti yaratildi")
         
 
-    app.add_handler(route_conv)
-    app.add_handler(start_conv)
+        app.add_handler(route_conv)
+        app.add_handler(start_conv)
 
-    app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-    app.add_handler(CommandHandler("reply", reply_command))
+        app.add_handler(MessageHandler(filters.LOCATION, handle_location))
+        app.add_handler(CommandHandler("reply", reply_command))
 
-    logger.info("Bot webhook rejimida ishga tushdi...")
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path="webhook",
-        webhook_url=WEBHOOK_URL + "/webhook"
-    )
+        logger.info("Bot webhook rejimida ishga tushdi...")
+        app.run_webhook(
+            listen="0.0.0.0",
+            port=PORT,
+            url_path="webhook",
+            webhook_url=WEBHOOK_URL + "/webhook"
+        )
 
-    app.idle()  # Ilovani faol ushlab turish
+        app.idle()  # Ilovani faol ushlab turish
 
 if __name__ == "__main__":
     main()
