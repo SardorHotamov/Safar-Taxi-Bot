@@ -111,6 +111,13 @@ def get_stats() -> Tuple[int, int]:
     passengers_count = db.users.count_documents({"role": "passenger"})
     return drivers_count, passengers_count    
 
+def get_all_users():
+    # Barcha foydalanuvchilarni olish uchun SQL yoki boshqa logikani qo‘shing
+    # Masalan, haydovchilar va yo‘lovchilarni birlashtirish:
+    drivers = get_all_drivers()
+    passengers = get_all_passengers()
+    return drivers + passengers
+
 def get_all_drivers() -> List[Tuple[int, str, str]]:
     """Barcha haydovchilarni olish."""
     drivers = db.users.find({"role": "driver"}, {"user_id": 1, "full_name": 1, "phone": 1})
