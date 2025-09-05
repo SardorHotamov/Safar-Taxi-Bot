@@ -1005,47 +1005,48 @@ def main():
             REGISTER_CAR_COLOR: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_car_color)],
             REGISTER_CAR_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_car_number)],
             FROM_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_region)],
-            FROM_DISTRICT: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_district)],
-            FROM_AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_area)],
-            TO_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, to_region)],
-            TO_DISTRICT: [MessageHandler(filters.TEXT & ~filters.COMMAND, to_district)],
-            ENTER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_price)],
-            CHOOSE_SEATS: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_seats)],
-            WHEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, when_choice)],
-            WHEN_PLAN_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, when_plan_date)],
-            WHEN_PLAN_HOUR: [MessageHandler(filters.TEXT & ~filters.COMMAND, when_plan_hour)],
-            AFTER_ROUTE_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, after_route_router)],
-            CHANGE_SEATS_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, change_seats)],
-            HELP_MESSAGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_help_message)],
-            ADMIN_MENU: [
-                MessageHandler(filters.Regex(f"^{BTN_ADMIN_STATS}$"), admin_stats),
-                MessageHandler(filters.Regex(f"^{BTN_ADMIN_DRIVERS}$"), admin_drivers),
-                MessageHandler(filters.Regex(f"^{BTN_ADMIN_PASSENGERS}$"), admin_passengers),
-                MessageHandler(filters.Regex(f"^{BTN_ADMIN_REPLY}$"), admin_reply),
-                MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start),
-                MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
-            ],
-            ADMIN_REPLY: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
-            "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
-            },
-            fallbacks=[
-                MessageHandler(filters.Regex(f"^{BTN_BACK}$"), after_route_router),
-                MessageHandler(filters.Regex(f"^{BTN_BACK_TO_MENU}$"), start),
-            ],
-            per_chat=True,
-            )
-            app.add_handler(route_conv)
+FROM_DISTRICT: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_district)],
+FROM_AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_area)],
+TO_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, to_region)],
+TO_DISTRICT: [MessageHandler(filters.TEXT & ~filters.COMMAND, to_district)],
+ENTER_PRICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_price)],
+CHOOSE_SEATS: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_seats)],
+WHEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, when_choice)],
+WHEN_PLAN_DATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, when_plan_date)],
+WHEN_PLAN_HOUR: [MessageHandler(filters.TEXT & ~filters.COMMAND, when_plan_hour)],
+AFTER_ROUTE_MENU: [MessageHandler(filters.TEXT & ~filters.COMMAND, after_route_router)],
+CHANGE_SEATS_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, change_seats)],
+HELP_MESSAGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_help_message)],
+ADMIN_MENU: [
+    MessageHandler(filters.Regex(f"^{BTN_ADMIN_STATS}$"), admin_stats),
+    MessageHandler(filters.Regex(f"^{BTN_ADMIN_DRIVERS}$"), admin_drivers),
+    MessageHandler(filters.Regex(f"^{BTN_ADMIN_PASSENGERS}$"), admin_passengers),
+    MessageHandler(filters.Regex(f"^{BTN_ADMIN_REPLY}$"), admin_reply),
+    MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start),
+    MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
+],
+ADMIN_REPLY: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
+"DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
+},
+fallbacks=[
+    MessageHandler(filters.Regex(f"^{BTN_BACK}$"), after_route_router),
+    MessageHandler(filters.Regex(f"^{BTN_BACK_TO_MENU}$"), start),
+],
+per_chat=True,
+)
+app.add_handler(route_conv)
 
-            app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-            app.add_handler(CommandHandler("reply", reply_command))
+app.add_handler(MessageHandler(filters.LOCATION, handle_location))
+app.add_handler(CommandHandler("reply", reply_command))
 
-            logger.info("Bot webhook rejimida ishga tushdi...")
-            app.run_webhook(
-                listen="0.0.0.0",
-                port=PORT,
-                url_path="webhook",
-                webhook_url=WEBHOOK_URL + "/webhook"
-            )
+logger.info("Bot webhook rejimida ishga tushdi...")
+app.run_webhook(
+    listen="0.0.0.0",
+    port=PORT,
+    url_path="webhook",
+    webhook_url=WEBHOOK_URL + "/webhook"
+)
+    app.idle()  # Ilovani faol ushlab turish
 
 if __name__ == "__main__":
     main()
