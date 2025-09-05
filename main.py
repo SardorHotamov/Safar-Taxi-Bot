@@ -134,6 +134,14 @@ from keyboards import (
     admin_menu_keyboard,
 )
 
+def main_menu_keyboard():
+    keyboard = [
+        [KeyboardButton(BTN_DRIVER), KeyboardButton(BTN_PASSENGER)],
+        [KeyboardButton(BTN_CHOOSE_ROUTE), KeyboardButton(BTN_EDIT_PROFILE)],
+        [KeyboardButton(BTN_HELP)]
+    ]
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
+
 def back_keyboard():
     return ReplyKeyboardMarkup([[KeyboardButton(BTN_BACK)]], resize_keyboard=True)
 
