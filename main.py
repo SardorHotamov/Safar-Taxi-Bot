@@ -44,7 +44,7 @@ from regions import regions
 # ------------------ UTILS ------------------
 from utils import is_valid_date, format_date, format_time
 
-from telegram import Update, ParseMode
+from telegram import Update
 from telegram.ext import ContextTypes
 from database import get_all_users, get_all_drivers, get_all_passengers
 
