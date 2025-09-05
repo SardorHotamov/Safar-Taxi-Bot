@@ -951,20 +951,7 @@ async def set_webhook():
     await app.bot.set_webhook(url=WEBHOOK_URL + "/webhook")
     print("Webhook sozlandi:", WEBHOOK_URL + "/webhook")
 
-# ------------------ MAIN ------------------
-def main():
-    logger.info("Kod ishga tushdi")
-    logger.info(f"BOT_TOKEN: {BOT_TOKEN[:5]}...")
-    logger.info(f"WEBHOOK_URL: {WEBHOOK_URL}")
-    logger.info(f"PORT: {PORT}")
-
-    try:
-        init_db()
-        logger.info("Ilova ishga tushmoqda")
-        app = Application.builder().token(BOT_TOKEN).build()  # app ni bu yerda aniqlaymiz
-        logger.info("Application obyekti yaratildi")
-        
-    route_conv = ConversationHandler(
+route_conv = ConversationHandler(
         entry_points=[
             MessageHandler(filters.Regex(f"^{BTN_EDIT_PROFILE}$"), edit_profile),
             MessageHandler(filters.Regex(f"^{BTN_CHOOSE_ROUTE}$"), choose_route),
@@ -1016,9 +1003,8 @@ def main():
         ],
         per_chat=True,
     )
-    app.add_handler(route_conv)
-            
-    start_conv = ConversationHandler(
+
+start_conv = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
             CHOOSE_ROLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_role)],
@@ -1034,6 +1020,22 @@ def main():
         fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK_TO_MENU}$"), start)],
         per_chat=True,
     )
+
+# ------------------ MAIN ------------------
+def main():
+    logger.info("Kod ishga tushdi")
+    logger.info(f"BOT_TOKEN: {BOT_TOKEN[:5]}...")
+    logger.info(f"WEBHOOK_URL: {WEBHOOK_URL}")
+    logger.info(f"PORT: {PORT}")
+
+    try:
+        init_db()
+        logger.info("Ilova ishga tushmoqda")
+        app = Application.builder().token(BOT_TOKEN).build()  # app ni bu yerda aniqlaymiz
+        logger.info("Application obyekti yaratildi")
+        
+
+    app.add_handler(route_conv)
     app.add_handler(start_conv)
 
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
