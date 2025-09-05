@@ -1026,32 +1026,26 @@ def main():
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
             ],
             ADMIN_REPLY: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
-            DELETE_USER_INPUT: [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
-        },
-        fallbacks=[
-            MessageHandler(filters.Regex(f"^{BTN_BACK}$"), after_route_router),
-            MessageHandler(filters.Regex(f"^{BTN_BACK_TO_MENU}$"), start),
-        ],
-        per_chat=True,
-    )
-    app.add_handler(route_conv)
+            "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
+            },
+            fallbacks=[
+                MessageHandler(filters.Regex(f"^{BTN_BACK}$"), after_route_router),
+                MessageHandler(filters.Regex(f"^{BTN_BACK_TO_MENU}$"), start),
+            ],
+            per_chat=True,
+            )
+            app.add_handler(route_conv)
 
-    app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-    app.add_handler(CommandHandler("reply", reply_command))
+            app.add_handler(MessageHandler(filters.LOCATION, handle_location))
+            app.add_handler(CommandHandler("reply", reply_command))
 
-    # Scheduler'ni boshqa thread'da ishga tushirish
-    import threading
-    scheduler_thread = threading.Thread(target=setup_scheduler, daemon=True)
-    scheduler_thread.start()
-
-    logger.info("Bot webhook rejimida ishga tushdi...")
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path="webhook",
-        webhook_url=WEBHOOK_URL + "/webhook"
-    )
-    app.idle()  # Ilovani faol ushlab turish
+            logger.info("Bot webhook rejimida ishga tushdi...")
+            app.run_webhook(
+                listen="0.0.0.0",
+                port=PORT,
+                url_path="webhook",
+                webhook_url=WEBHOOK_URL + "/webhook"
+            )
 
 if __name__ == "__main__":
     main()
