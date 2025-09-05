@@ -44,6 +44,10 @@ from regions import regions
 # ------------------ UTILS ------------------
 from utils import is_valid_date, format_date, format_time
 
+from telegram import Update, ParseMode
+from telegram.ext import ContextTypes
+from database import get_all_users, get_all_drivers, get_all_passengers
+
 # ------------------ ENV ------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -1029,6 +1033,66 @@ start_conv = ConversationHandler(
         per_chat=True,
     )
 
+async def send_message_to_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Admin uchun barcha foydalanuvchilarga xabar yuborish."""
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        return
+
+    message = context.args
+    if not message:
+        await update.message.reply_text("Iltimos, xabar matnini kiriting! Masalan: /send_all Salom hammaga")
+        return
+
+    message_text = " ".join(message)
+    users = get_all_users()
+    for user in users:
+        try:
+            await context.bot.send_message(chat_id=user['chat_id'], text=message_text)
+        except Exception as e:
+            logger.error(f"Xabar yuborishda xatolik: {e}")
+    await update.message.reply_text("Xabar barcha foydalanuvchilarga muvaffaqiyatli yuborildi!")
+
+async def send_message_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Admin uchun haydovchilarga alohida xabar yuborish."""
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        return
+
+    message = context.args
+    if not message:
+        await update.message.reply_text("Iltimos, xabar matnini kiriting! Masalan: /send_drivers Haydovchilarga e'lon")
+        return
+
+    message_text = " ".join(message)
+    drivers = get_all_drivers()
+    for driver in drivers:
+        try:
+            await context.bot.send_message(chat_id=driver['chat_id'], text=message_text)
+        except Exception as e:
+            logger.error(f"Xabar yuborishda xatolik: {e}")
+    await update.message.reply_text("Xabar haydovchilarga muvaffaqiyatli yuborildi!")
+
+async def send_message_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Admin uchun yo‘lovchilarga alohida xabar yuborish."""
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        return
+
+    message = context.args
+    if not message:
+        await update.message.reply_text("Iltimos, xabar matnini kiriting! Masalan: /send_passengers Yo‘lovchilarga xabar")
+        return
+
+    message_text = " ".join(message)
+    passengers = get_all_passengers()
+    for passenger in passengers:
+        try:
+            await context.bot.send_message(chat_id=passenger['chat_id'], text=message_text)
+        except Exception as e:
+            logger.error(f"Xabar yuborishda xatolik: {e}")
+    await update.message.reply_text("Xabar yo‘lovchilarga muvaffaqiyatli yuborildi!")
+
 # ------------------ MAIN ------------------
 def main():
     # Ma'lumotlar bazasini ishga tushirish
@@ -1044,6 +1108,10 @@ def main():
     app.add_handler(start_conv)
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
+
+    app.add_handler(CommandHandler("send_all", send_message_to_all))
+    app.add_handler(CommandHandler("send_drivers", send_message_to_drivers))
+    app.add_handler(CommandHandler("send_passengers", send_message_to_passengers))
 
     # Webhook ni sozlash
     logger.info("Bot webhook rejimida ishga tushdi...")
