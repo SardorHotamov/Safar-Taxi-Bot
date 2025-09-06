@@ -79,3 +79,10 @@ def admin_menu_keyboard():
         [KeyboardButton("Yo‘lovchilar ma'lumotlari"), KeyboardButton("Xabar yuborish")],
         [KeyboardButton("Foydalanuvchini o‘chirish"), KeyboardButton("Orqaga")]
     ], resize_keyboard=True)
+
+def driver_selection_keyboard():
+    """Haydovchi tanlash uchun keyboard qaytaradi (masalan, sinov ma'lumotlari)."""
+    drivers = ["Haydovchi 1", "Haydovchi 2", "Haydovchi 3"]  # Database'dan haydovchilar ro'yxatini olish kerak
+    keyboard = [drivers[i:i + 2] for i in range(0, len(drivers), 2)]
+    keyboard.append([KeyboardButton(BTN_BACK)])
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
