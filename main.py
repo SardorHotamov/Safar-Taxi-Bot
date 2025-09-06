@@ -1112,8 +1112,10 @@ async def send_message_to_all(update: Update, context: ContextTypes.DEFAULT_TYPE
         return
 
     message_text = " ".join(message)
-    users = get_all_users()
-    for user in users:
+    from database import get_all_drivers, get_all_passengers  # Ichki import
+    drivers = get_all_drivers()
+    passengers = get_all_passengers()
+    for user in drivers + passengers:
         try:
             await context.bot.send_message(chat_id=user['chat_id'], text=message_text)
         except Exception as e:
@@ -1132,6 +1134,7 @@ async def send_message_to_drivers(update: Update, context: ContextTypes.DEFAULT_
         return
 
     message_text = " ".join(message)
+    from database import get_all_drivers  # Ichki import
     drivers = get_all_drivers()
     for driver in drivers:
         try:
@@ -1152,6 +1155,7 @@ async def send_message_to_passengers(update: Update, context: ContextTypes.DEFAU
         return
 
     message_text = " ".join(message)
+    from database import get_all_passengers  # Ichki import
     passengers = get_all_passengers()
     for passenger in passengers:
         try:
