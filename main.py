@@ -74,7 +74,6 @@ BTN_CHANGE_SEATS = "Bo‘sh joylar soni"
 BTN_GO = "Ketdik"
 
 BTN_SEE_DRIVERS = "Haydovchilarni ko‘rish"
-REQUEST_LOCATION = "REQUEST_LOCATION
 SELECT_DRIVER = "Haydivchini tanlash"
 BTN_SEND_GEO = "Geolokatsiya yuborish"
 
