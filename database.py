@@ -21,9 +21,6 @@ try:
 except ServerSelectionTimeoutError as e:  # Tuzatildi
     raise RuntimeError(f"MongoDB ulanishda xatolik: {e}")
 
-client = MongoClient('mongodb://localhost:27017/')  # MongoDB ulanishi
-db = client['your_database']  # Sizning DB nomingiz
-
 def init_db():
     logger.info("Ma'lumotlar bazasi ishga tushirilmoqda")
     # Ma'lumotlar bazasi logikasi (masalan, SQLite)
