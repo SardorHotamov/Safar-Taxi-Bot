@@ -1132,6 +1132,15 @@ start_conv = ConversationHandler(
         per_chat=True,
     )
 
+location_conv = ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex(f"^{BTN_SEND_GEO}$"), request_location)],
+        states={
+            SELECT_DRIVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)],
+        },
+        fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), lambda update, context: ConversationHandler.END)],
+        per_chat=True,
+    )
+
 # ------------------ MAIN ------------------
 def main():
     # Ma'lumotlar bazasini ishga tushirish
