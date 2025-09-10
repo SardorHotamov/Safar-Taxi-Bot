@@ -14,11 +14,14 @@ if not MONGODB_URI:
     raise RuntimeError("MONGODB_URI topilmadi. .env faylida MONGODB_URI=... deb qo‘ying.")
 
 try:
-    client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+    client = MongoClient('mongodb://localhost:27017/'))
     client.server_info()  # Ulanishni tekshirish
     db = client['SafarTaxiBot']
 except ServerSelectionTimeoutError as e:  # Tuzatildi
     raise RuntimeError(f"MongoDB ulanishda xatolik: {e}")
+
+client = MongoClient('mongodb://localhost:27017/')  # MongoDB ulanishi
+db = client['your_database']  # Sizning DB nomingiz
 
 def init_db():
     logger.info("Ma'lumotlar bazasi ishga tushirilmoqda")
@@ -118,15 +121,13 @@ def get_all_users():
     passengers = get_all_passengers()
     return drivers + passengers
 
-def get_all_drivers() -> List[Tuple[int, str, str]]:
-    """Barcha haydovchilarni olish."""
-    drivers = db.users.find({"role": "driver"}, {"user_id": 1, "full_name": 1, "phone": 1})
-    return [(d["user_id"], d["full_name"], d["phone"]) for d in drivers]
+def get_all_drivers():
+    drivers = db.drivers.find()  # MongoDB dan olish
+    return [{"chat_id": str(driver['chat_id']), "name": driver['name']} for driver in drivers]
 
-def get_all_passengers() -> List[Tuple[int, str, str]]:
-    """Barcha yo'lovchilarni olish."""
-    passengers = db.users.find({"role": "passenger"}, {"user_id": 1, "full_name": 1, "phone": 1})
-    return [(p["user_id"], p["full_name"], p["phone"]) for p in passengers]
+def get_all_passengers():
+    passengers = db.passengers.find()
+    return [{"chat_id": str(passenger['chat_id']), "name": passenger['name']} for passenger in passengers]
 
 def get_matching_passengers(from_region: str, from_district: str, to_region: str, to_district: str) -> List[Tuple[int]]:
     """Mos yo'lovchilarni topish."""

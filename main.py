@@ -903,14 +903,12 @@ async def handle_send_to_all_groups(update: Update, context: ContextTypes.DEFAUL
         await update.message.reply_text("Hech qanday foydalanuvchi topilmadi!")
         return ADMIN_MENU
     for user in all_users:
-        if isinstance(user, dict):  # Faqat lug‘at bo‘lsa
-            try:
-                await context.bot.send_message(chat_id=user.get('chat_id', 'N/A'), text=message_text)
-                logger.info(f"Message sent to chat_id {user.get('chat_id', 'N/A')}")
-            except Exception as e:
-                logger.error(f"Failed to send to {user.get('chat_id', 'N/A')}: {str(e)}")
-        else:
-            logger.error(f"Invalid user format: {user}")
+        try:
+            chat_id = user[0] if isinstance(user, tuple) else user.get('chat_id', 'N/A')
+            await context.bot.send_message(chat_id=chat_id, text=message_text)
+            logger.info(f"Message sent to chat_id {chat_id}")
+        except Exception as e:
+            logger.error(f"Failed to send to {chat_id}: {str(e)}")
     await update.message.reply_text("Xabar yuborildi!")
     return ADMIN_MENU
 
