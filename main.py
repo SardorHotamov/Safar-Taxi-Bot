@@ -3,8 +3,6 @@ import time
 import asyncio
 import os
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
-
 
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
@@ -1143,7 +1141,6 @@ def main():
     app.add_handler(start_conv)
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
-
     app.add_handler(CommandHandler("send_all", send_to_all_groups))
     app.add_handler(CommandHandler("send_drivers", send_message_to_drivers))
     app.add_handler(CommandHandler("send_passengers", send_message_to_passengers))
