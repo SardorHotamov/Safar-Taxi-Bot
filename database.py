@@ -14,9 +14,10 @@ if not MONGODB_URI:
     raise RuntimeError("MONGODB_URI topilmadi. .env faylida MONGODB_URI=... deb qo‘ying.")
 
 try:
-    client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
+    client = MongoClient(MONGODB_URI)
     client.server_info()  # Ulanishni tekshirish
     db = client['SafarTaxiBot']
+
 except ServerSelectionTimeoutError as e:  # Tuzatildi
     raise RuntimeError(f"MongoDB ulanishda xatolik: {e}")
 
