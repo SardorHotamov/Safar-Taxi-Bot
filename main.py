@@ -89,6 +89,9 @@ BTN_POST = "Pochta"
 BTN_ADMIN_STATS = "Foydalanuvchilar soni"
 BTN_ADMIN_DRIVERS = "Haydovchilar ma'lumotlari"
 BTN_ADMIN_PASSENGERS = "Yo‘lovchilar ma'lumotlari"
+SEND_TO_ALL_GROUPS = "Barchaga xabar yuborish"
+SEND_TO_DRIVERS = "Haydovchilarga xabar"
+SEND_TO_PASSENGERS = "Yo‘lovchilarga xabar"
 BTN_ADMIN_REPLY = "Xabar yuborish"
 BTN_DELETE_USER_PROMPT = "Foydalanuvchini o‘chirish"
 
@@ -1096,7 +1099,6 @@ route_conv = ConversationHandler(
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
             ],
             "ADMIN_REPLY": [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
-            "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
             "SEND_TO_ALL_GROUPS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_all_groups)],
             "SEND_TO_DRIVERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_drivers)],
             "SEND_TO_PASSENGERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_passengers)],
