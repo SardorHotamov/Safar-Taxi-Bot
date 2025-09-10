@@ -74,6 +74,7 @@ BTN_CHANGE_SEATS = "Bo‘sh joylar soni"
 BTN_GO = "Ketdik"
 
 BTN_SEE_DRIVERS = "Haydovchilarni ko‘rish"
+REQUEST_LOCATION = "REQUEST_LOCATION
 SELECT_DRIVER = "Haydivchini tanlash"
 BTN_SEND_GEO = "Geolokatsiya yuborish"
 
@@ -672,6 +673,24 @@ async def see_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return AFTER_ROUTE_MENU
 
 # ------------------ HANDLE LOCATION ------------------
+
+async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Geolokatsiya so'rash va haydovchilarni ko'rsatish."""
+    user = get_user(update.effective_user.id)
+    if not user or user.get('role') != 'passenger':
+        await update.message.reply_text("Siz yo‘lovchi emassiz!")
+        return ConversationHandler.END
+    from database import get_matching_drivers
+    drivers = get_matching_drivers(user.get('route'))  # Yo'nalish bo'yicha haydovchilar
+    if not drivers:
+        await update.message.reply_text("Bu yo'nalishda haydovchi topilmadi!")
+        return ConversationHandler.END
+    keyboard = [[KeyboardButton(driver['name'])] for driver in drivers] + [[KeyboardButton(BTN_BACK)]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    await update.message.reply_text("Iltimos, haydovchini tanlang:", reply_markup=reply_markup)
+    context.user_data['drivers'] = drivers  # Haydovchilarni saqlash
+    return SELECT_DRIVER
+
 async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Haydovchi tanlanganidan so'ng geolokatsiya so'rash."""
     selected_driver = update.message.text
@@ -1133,13 +1152,14 @@ start_conv = ConversationHandler(
     )
 
 location_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(f"^{BTN_SEND_GEO}$"), request_location)],
-        states={
-            SELECT_DRIVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)],
-        },
-        fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), lambda update, context: ConversationHandler.END)],
-        per_chat=True,
-    )
+    entry_points=[MessageHandler(filters.Regex(f"^{BTN_SEND_GEO}$"), request_location)],
+    states={
+        SELECT_DRIVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)],
+        REQUEST_LOCATION: [MessageHandler(filters.LOCATION & ~filters.COMMAND, handle_location)],
+    },
+    fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), lambda update, context: ConversationHandler.END)],
+    per_chat=True,
+)
 
 # ------------------ MAIN ------------------
 def main():
