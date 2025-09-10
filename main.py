@@ -912,6 +912,77 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Xato: {e}. Iltimos, to‘g‘ri formatda kiriting.", reply_markup=admin_menu_keyboard())
         return ADMIN_MENU
 
+async def send_to_all_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        return ADMIN_MENU
+    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
+    return "SEND_TO_ALL_GROUPS"
+
+async def handle_send_to_all_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    message_text = update.message.text
+    from database import get_all_drivers, get_all_passengers
+    drivers = get_all_drivers()
+    passengers = get_all_passengers()
+    all_users = drivers + passengers
+    if not all_users:
+        await update.message.reply_text("Hech qanday foydalanuvchi topilmadi!")
+        return ADMIN_MENU
+    for user in all_users:
+        try:
+            await context.bot.send_message(chat_id=user.get('chat_id', 'N/A'), text=message_text)
+            logger.info(f"Message sent to chat_id {user.get('chat_id', 'N/A')}")
+        except Exception as e:
+            logger.error(f"Failed to send to {user.get('chat_id', 'N/A')}: {str(e)}")
+    await update.message.reply_text("Xabar barcha foydalanuvchilarga muvaffaqiyatli yuborildi!")
+    return ADMIN_MENU
+
+async def send_message_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        return ADMIN_MENU
+    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
+    return "SEND_TO_DRIVERS"
+
+async def handle_send_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    message_text = update.message.text
+    from database import get_all_drivers
+    drivers = get_all_drivers()
+    if not drivers:
+        await update.message.reply_text("Hech qanday haydovchi topilmadi!")
+        return ADMIN_MENU
+    for driver in drivers:
+        try:
+            await context.bot.send_message(chat_id=driver.get('chat_id', 'N/A'), text=message_text)
+            logger.info(f"Message sent to chat_id {driver.get('chat_id', 'N/A')}")
+        except Exception as e:
+            logger.error(f"Failed to send to {driver.get('chat_id', 'N/A')}: {str(e)}")
+    await update.message.reply_text("Xabar haydovchilarga muvaffaqiyatli yuborildi!")
+    return ADMIN_MENU
+
+async def send_message_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        return ADMIN_MENU
+    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
+    return "SEND_TO_PASSENGERS"
+
+async def handle_send_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    message_text = update.message.text
+    from database import get_all_passengers
+    passengers = get_all_passengers()
+    if not passengers:
+        await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
+        return ADMIN_MENU
+    for passenger in passengers:
+        try:
+            await context.bot.send_message(chat_id=passenger.get('chat_id', 'N/A'), text=message_text)
+            logger.info(f"Message sent to chat_id {passenger.get('chat_id', 'N/A')}")
+        except Exception as e:
+            logger.error(f"Failed to send to {passenger.get('chat_id', 'N/A')}: {str(e)}")
+    await update.message.reply_text("Xabar yo‘lovchilarga muvaffaqiyatli yuborildi!")
+    return ADMIN_MENU
+
 async def delete_user_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     if str(user_id) not in ADMIN_IDS:
@@ -1020,10 +1091,17 @@ route_conv = ConversationHandler(
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_DRIVERS}$"), admin_drivers),
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_PASSENGERS}$"), admin_passengers),
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_REPLY}$"), admin_reply),
+                MessageHandler(filters.Regex(f"^{SEND_TO_ALL_GROUPS}$"), send_to_all_groups),
+                MessageHandler(filters.Regex(f"^{SEND_TO_DRIVERS}$"), send_message_to_drivers),
+                MessageHandler(filters.Regex(f"^{SEND_TO_PASSENGERS}$"), send_message_to_passengers)
                 MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start),
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
             ],
-            ADMIN_REPLY: [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
+            "ADMIN_REPLY": [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
+            "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
+            "SEND_TO_ALL_GROUPS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_all_groups)],
+            "SEND_TO_DRIVERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_drivers)],
+            "SEND_TO_PASSENGERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_passengers)],
             "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
         },
         fallbacks=[
@@ -1050,120 +1128,6 @@ start_conv = ConversationHandler(
         per_chat=True,
     )
 
-async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Foydalanuvchidan geolokatsiya so'rash va haydovchi tanlash opsiyasini ko'rsatish."""
-    keyboard = [
-        [KeyboardButton("Geolokatsiyani yuborish", request_location=True)],
-        [KeyboardButton("Haydovchi tanlash")],
-        [KeyboardButton(BTN_BACK)]
-    ]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-    await update.message.reply_text("Iltimos, geolokatsiyangizni yuboring yoki haydovchi tanlang:", reply_markup=reply_markup)
-    return "LOCATION_OR_DRIVER"
-
-async def handle_location_or_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Geolokatsiya yoki haydovchi tanlashni qayta ishlash."""
-    if update.message.location:
-        latitude = update.message.location.latitude
-        longitude = update.message.location.longitude
-        await update.message.reply_text(
-            f"Sizning geolokatsiyangiz qabul qilindi!\nLatitude: {latitude}\nLongitude: {longitude}",
-            reply_markup=main_menu_keyboard()
-        )
-        return ConversationHandler.END
-    elif update.message.text == "Haydovchi tanlash":
-        await update.message.reply_text("Iltimos, haydovchi ro‘yxatini tanlang:", reply_markup=driver_selection_keyboard())
-        return "SELECT_DRIVER"
-    elif update.message.text == BTN_BACK:
-        await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
-        return ADMIN_MENU if update.effective_user.id in ADMIN_IDS else ConversationHandler.END
-    else:
-        await update.message.reply_text("Noto‘g‘ri kiriting! Iltimos, geolokatsiya yuboring yoki haydovchi tanlang.")
-        return "LOCATION_OR_DRIVER"
-
-async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Haydovchi tanlashni qayta ishlash."""
-    selected_driver = update.message.text
-    await update.message.reply_text(
-        f"Siz {selected_driver} haydovchini tanladingiz!",
-        reply_markup=main_menu_keyboard()
-    )
-    return ConversationHandler.END
-
-location_driver_conv = ConversationHandler(
-    entry_points=[CommandHandler("geolocation", request_location)],
-    states={
-        "LOCATION_OR_DRIVER": [MessageHandler(filters.LOCATION & ~filters.COMMAND, handle_location_or_driver),
-                             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_location_or_driver)],
-        "SELECT_DRIVER": [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)]
-    },
-    fallbacks=[]
-)
-
-async def send_message_to_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Admin uchun barcha foydalanuvchilarga xabar yuborish."""
-    if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
-        return
-
-    message = context.args
-    if not message:
-        await update.message.reply_text("Iltimos, xabar matnini kiriting! Masalan: /send_all Salom hammaga")
-        return
-
-    message_text = " ".join(message)
-    from database import get_all_drivers, get_all_passengers  # Ichki import
-    drivers = get_all_drivers()
-    passengers = get_all_passengers()
-    for user in drivers + passengers:
-        try:
-            await context.bot.send_message(chat_id=user['chat_id'], text=message_text)
-        except Exception as e:
-            logger.error(f"Xabar yuborishda xatolik: {e}")
-    await update.message.reply_text("Xabar barcha foydalanuvchilarga muvaffaqiyatli yuborildi!")
-
-async def send_message_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Admin uchun haydovchilarga alohida xabar yuborish."""
-    if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
-        return
-
-    message = context.args
-    if not message:
-        await update.message.reply_text("Iltimos, xabar matnini kiriting! Masalan: /send_drivers Haydovchilarga e'lon")
-        return
-
-    message_text = " ".join(message)
-    from database import get_all_drivers  # Ichki import
-    drivers = get_all_drivers()
-    for driver in drivers:
-        try:
-            await context.bot.send_message(chat_id=driver['chat_id'], text=message_text)
-        except Exception as e:
-            logger.error(f"Xabar yuborishda xatolik: {e}")
-    await update.message.reply_text("Xabar haydovchilarga muvaffaqiyatli yuborildi!")
-
-async def send_message_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Admin uchun yo‘lovchilarga alohida xabar yuborish."""
-    if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
-        return
-
-    message = context.args
-    if not message:
-        await update.message.reply_text("Iltimos, xabar matnini kiriting! Masalan: /send_passengers Yo‘lovchilarga xabar")
-        return
-
-    message_text = " ".join(message)
-    from database import get_all_passengers  # Ichki import
-    passengers = get_all_passengers()
-    for passenger in passengers:
-        try:
-            await context.bot.send_message(chat_id=passenger['chat_id'], text=message_text)
-        except Exception as e:
-            logger.error(f"Xabar yuborishda xatolik: {e}")
-    await update.message.reply_text("Xabar yo‘lovchilarga muvaffaqiyatli yuborildi!")
-
 # ------------------ MAIN ------------------
 def main():
     # Ma'lumotlar bazasini ishga tushirish
@@ -1180,7 +1144,7 @@ def main():
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
 
-    app.add_handler(CommandHandler("send_all", send_message_to_all))
+    app.add_handler(CommandHandler("send_all", send_to_all_groups))
     app.add_handler(CommandHandler("send_drivers", send_message_to_drivers))
     app.add_handler(CommandHandler("send_passengers", send_message_to_passengers))
 

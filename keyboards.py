@@ -76,8 +76,10 @@ def hour_keyboard():
 def admin_menu_keyboard():
     return ReplyKeyboardMarkup([
         [KeyboardButton("Foydalanuvchilar soni"), KeyboardButton("Haydovchilar ma'lumotlari")],
-        [KeyboardButton("Yo‘lovchilar ma'lumotlari"), KeyboardButton("Xabar yuborish")],
-        [KeyboardButton("Foydalanuvchini o‘chirish"), KeyboardButton("Orqaga")]
+        [KeyboardButton("Yo‘lovchilar ma'lumotlari"), KeyboardButton("Foydalanuvchini o‘chirish")],
+        [KeyboardButton("Barchaga xabar yuborish"), KeyboardButton("Yo‘lovchilarga xabar")],
+        [KeyboardButton("Haydovchilarga xabar"), KeyboardButton("Xabar yuborish")],
+        [KeyboardButton("Orqaga")]
     ], resize_keyboard=True)
 
 def driver_selection_keyboard():
