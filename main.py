@@ -74,6 +74,7 @@ BTN_CHANGE_SEATS = "Bo‘sh joylar soni"
 BTN_GO = "Ketdik"
 
 BTN_SEE_DRIVERS = "Haydovchilarni ko‘rish"
+SELECT_DRIVER = "Haydivchini tanlash"
 BTN_SEND_GEO = "Geolokatsiya yuborish"
 
 BTN_BACK = "Orqaga"
@@ -671,32 +672,35 @@ async def see_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return AFTER_ROUTE_MENU
 
 # ------------------ HANDLE LOCATION ------------------
-async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    loc = update.message.location
-    if not loc:
-        await update.message.reply_text("Geolokatsiya yuborilmadi. Iltimos, qaytadan urinib ko‘ring.")
-        return AFTER_ROUTE_MENU
-    user_id = update.effective_user.id
-    trip = get_user_trip(user_id)
-    if not trip:
-        await update.message.reply_text("Yo‘nalish topilmadi. Iltimos, yo‘nalish tanlang.")
-        return await choose_route(update, context)
-    try:
-        drivers = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
-        if not drivers:
-            await update.message.reply_text("Hozircha mos haydovchi topilmadi.", reply_markup=post_route_menu_passenger())
-            return AFTER_ROUTE_MENU
-        for d in drivers[:1]:
-            driver_id = d[0]
-            await context.bot.send_location(chat_id=driver_id, latitude=loc.latitude, longitude=loc.longitude)
-            await context.bot.send_message(chat_id=driver_id, text=f"Yo‘lovchining geolokatsiyasi (ID: {user_id})")
-            await update.message.reply_text("Geolokatsiya tanlangan haydovchiga yuborildi.", reply_markup=post_route_menu_passenger())
-            return AFTER_ROUTE_MENU
-    except Exception as e:
-        print(f"Xato geolokatsiya yuborishda (haydovchi {driver_id}): {e}")
-        await update.message.reply_text(f"Geolokatsiyani yuborishda xato: {e}. Iltimos, qaytadan urinib ko‘ring.", reply_markup=post_route_menu_passenger())
-    await update.message.reply_text("Geolokatsiyani yuborishda xatolik yuz berdi.", reply_markup=post_route_menu_passenger())
-    return AFTER_ROUTE_MENU
+async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Haydovchi tanlanganidan so'ng geolokatsiya so'rash."""
+    selected_driver = update.message.text
+    drivers = context.user_data.get('drivers', [])
+    driver = next((d for d in drivers if d['name'] == selected_driver), None)
+    if not driver or update.message.text == BTN_BACK:
+        await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
+        return ConversationHandler.END
+    context.user_data['selected_driver'] = driver
+    keyboard = [[KeyboardButton("Geolokatsiyani yuborish", request_location=True)]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    await update.message.reply_text("Iltimos, geolokatsiyangizni yuboring:", reply_markup=reply_markup)
+    return REQUEST_LOCATION
+
+async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Geolokatsiyani qayta ishlash."""
+    if update.message.location:
+        latitude = update.message.location.latitude
+        longitude = update.message.location.longitude
+        driver = context.user_data.get('selected_driver')
+        if driver:
+            await context.bot.send_message(
+                chat_id=driver['chat_id'],
+                text=f"Yo‘lovchi geolokatsiya yubordi!\nLatitude: {latitude}\nLongitude: {longitude}"
+            )
+        await update.message.reply_text(
+            "Geolokatsiyangiz yuborildi!", reply_markup=main_menu_keyboard()
+        )
+    return ConversationHandler.END
 
 # ------------------ CHANGE SEATS (driver) ------------------
 async def change_seats(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1141,6 +1145,7 @@ def main():
     # Handler larni qo'shish
     app.add_handler(route_conv)
     app.add_handler(start_conv)
+    app.add_handler(location_conv)
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
     app.add_handler(CommandHandler("send_all", send_to_all_groups))
