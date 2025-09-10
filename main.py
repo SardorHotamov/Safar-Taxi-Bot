@@ -238,7 +238,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return CHOOSE_ROLE  # To‘g‘ri state
     await update.message.reply_text(
         f"Assalomu alaykum, {saved_user['full_name']}!\n"
-        "Siz allaqachon ro‘yxatdansiz. Nima qilmoqchisiz?",
+        "Siz allaqachon ro‘yxatdan o‘tgansiz. Quyidagilardan birini tanlang",
         reply_markup=main_menu_keyboard()
     )
     return ConversationHandler.END
