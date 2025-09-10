@@ -692,7 +692,7 @@ async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return SELECT_DRIVER
 
 async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Haydovchi tanlanganidan so'ng geolokatsiya so'rash."""
+    """Haydovchi tanlanganidan so'ng geolokatsiya xaritasini ochish."""
     selected_driver = update.message.text
     drivers = context.user_data.get('drivers', [])
     driver = next((d for d in drivers if d['name'] == selected_driver), None)
@@ -703,7 +703,7 @@ async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     keyboard = [[KeyboardButton("Geolokatsiyani yuborish", request_location=True)]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text("Iltimos, geolokatsiyangizni yuboring:", reply_markup=reply_markup)
-    return REQUEST_LOCATION
+    return ConversationHandler.END  # Xarita avtomatik ochiladi
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Geolokatsiyani qayta ishlash."""
@@ -1154,8 +1154,10 @@ start_conv = ConversationHandler(
 location_conv = ConversationHandler(
     entry_points=[MessageHandler(filters.Regex(f"^{BTN_SEND_GEO}$"), request_location)],
     states={
-        SELECT_DRIVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)],
-        REQUEST_LOCATION: [MessageHandler(filters.LOCATION & ~filters.COMMAND, handle_location)],
+        SELECT_DRIVER: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver),
+            MessageHandler(filters.LOCATION & ~filters.COMMAND, handle_location)
+        ],
     },
     fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), lambda update, context: ConversationHandler.END)],
     per_chat=True,
