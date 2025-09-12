@@ -5,6 +5,7 @@ from typing import Optional, Tuple, List
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import logging
+from typing import Optional
 
 # Loglashni sozlash
 logger = logging.getLogger(__name__)
@@ -87,7 +88,7 @@ def get_user(user_id: int) -> Optional[dict]:
 
 def get_user_trip(user_id: int) -> Optional[dict]:
     """Foydalanuvchining sayohat ma'lumotlarini olish."""
-    trip = db.trips.find_one({"user_id": user_id})
+    trip = db.trips.find_one({"user_id": str(user_id)})
     if trip:
         return {
             'user_id': trip['user_id'],
