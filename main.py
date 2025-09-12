@@ -833,15 +833,25 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     return ADMIN_MENU
 
-async def admin_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    drivers = get_all_drivers()  # database.py dan
-    await update.message.reply_text("Haydovchilar ro‘yxati: " + str(drivers))
+async def admin_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    from database import get_all_drivers
+    drivers = get_all_drivers()
+    if not drivers:
+        await update.message.reply_text("Hech qanday haydovchi topilmadi!")
+        return ADMIN_MENU
+    message = "Haydovchilar ro‘yxati:\n" + "\n".join([f"ID: {d.get('chat_id', 'N/A')}, Ism: {d.get('name', 'Noma’lum')}" for d in drivers])
+    await update.message.reply_text(message)
     return ADMIN_MENU
 
-async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    passengers = get_all_passengers()  # database.py dan
-    await update.message.reply_text("Yo‘lovchilar ro‘yxati: " + str(passengers))
-    return ADMIN_MENU            
+async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    from database import get_all_passengers
+    passengers = get_all_passengers()
+    if not passengers:
+        await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
+        return ADMIN_MENU
+    message = "Yo‘lovchilar ro‘yxati:\n" + "\n".join([f"ID: {p.get('chat_id', 'N/A')}, Ism: {p.get('name', 'Noma’lum')}" for p in passengers])
+    await update.message.reply_text(message)
+    return ADMIN_MENU          
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
