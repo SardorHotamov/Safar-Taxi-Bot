@@ -118,13 +118,15 @@ def get_all_users():
     passengers = get_all_passengers()
     return drivers + passengers
 
-def get_all_drivers():
-    drivers = db.drivers.find()  # MongoDB dan olish
-    return [{"chat_id": str(driver['chat_id']), "name": driver['name']} for driver in drivers]
+def get_all_drivers() -> List[Tuple[int, str, str]]:
+    """Barcha haydovchilarni olish."""
+    drivers = db.users.find({"role": "driver"}, {"user_id": 1, "full_name": 1, "phone": 1})
+    return [(d["user_id"], d["full_name"], d["phone"]) for d in drivers]
 
-def get_all_passengers():
-    passengers = db.passengers.find()
-    return [{"chat_id": str(passenger['chat_id']), "name": passenger['name']} for passenger in passengers]
+def get_all_passengers() -> List[Tuple[int, str, str]]:
+    """Barcha yo'lovchilarni olish."""
+    passengers = db.users.find({"role": "passenger"}, {"user_id": 1, "full_name": 1, "phone": 1})
+    return [(p["user_id"], p["full_name"], p["phone"]) for p in passengers]
 
 def get_matching_passengers(from_region: str, from_district: str, to_region: str, to_district: str) -> List[Tuple[int]]:
     """Mos yo'lovchilarni topish."""
