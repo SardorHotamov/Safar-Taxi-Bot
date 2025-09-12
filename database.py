@@ -88,7 +88,7 @@ def get_user(user_id: int) -> Optional[dict]:
 
 def get_user_trip(user_id: int) -> Optional[dict]:
     """Foydalanuvchining sayohat ma'lumotlarini olish."""
-    trip = db.trips.find_one({"user_id": str(user_id)})
+    trip = db.trips.find_one({"user_id": user_id})
     if trip:
         return {
             'user_id': trip['user_id'],
@@ -120,12 +120,20 @@ def get_all_users():
     return drivers + passengers
 
 def get_all_drivers():
-    drivers = db.drivers.find()  # MongoDB dan olish
-    return [{"chat_id": str(driver['chat_id']), "name": driver['name']} for driver in drivers]
+    try:
+        drivers = list(db.drivers.find({}, {"chat_id": 1, "name": 1}))  # Faqat kerakli maydonlarni olish
+        return [{"chat_id": str(d.get('chat_id', '')), "name": d.get('name', 'Noma’lum')} for d in drivers]
+    except Exception as e:
+        print(f"Haydovchilarni olishda xatolik: {e}")
+        return []
 
 def get_all_passengers():
-    passengers = db.passengers.find()
-    return [{"chat_id": str(passenger['chat_id']), "name": passenger['name']} for passenger in passengers]
+    try:
+        passengers = list(db.passengers.find({}, {"chat_id": 1, "name": 1}))
+        return [{"chat_id": str(p.get('chat_id', '')), "name": p.get('name', 'Noma’lum')} for p in passengers]
+    except Exception as e:
+        print(f"Yo‘lovchilarni olishda xatolik: {e}")
+        return []
 
 def get_matching_passengers(from_region: str, from_district: str, to_region: str, to_district: str) -> List[Tuple[int]]:
     """Mos yo'lovchilarni topish."""

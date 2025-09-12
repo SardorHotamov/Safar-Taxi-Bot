@@ -836,36 +836,14 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def admin_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     from database import get_all_drivers
     drivers = get_all_drivers()
-    if not drivers:
-        await update.message.reply_text("Hech qanday haydovchi topilmadi!")
-        return ADMIN_MENU
-    message_list = []
-    for d in drivers:
-        if isinstance(d, tuple):
-            chat_id, name = d[0], d[1]  # Tuple dan olish
-        else:
-            chat_id, name = d.get('chat_id', 'N/A'), d.get('name', 'Noma’lum')
-        message_list.append(f"ID: {chat_id}, Ism: {name}")
-    message = f"Haydovchilar soni: {len(drivers)}\n" + "\n".join(message_list)
-    await update.message.reply_text(message)
+    await update.message.reply_text(f"Haydovchilar soni: {len(drivers)}\n{drivers}")
     return ADMIN_MENU
 
 async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     from database import get_all_passengers
     passengers = get_all_passengers()
-    if not passengers:
-        await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
-        return ADMIN_MENU
-    message_list = []
-    for p in passengers:
-        if isinstance(p, tuple):
-            chat_id, name = p[0], p[1]
-        else:
-            chat_id, name = p.get('chat_id', 'N/A'), p.get('name', 'Noma’lum')
-        message_list.append(f"ID: {chat_id}, Ism: {name}")
-    message = f"Yo‘lovchilar soni: {len(passengers)}\n" + "\n".join(message_list)
-    await update.message.reply_text(message)
-    return ADMIN_MENU        
+    await update.message.reply_text(f"Yo‘lovchilar soni: {len(passengers)}\n{passengers}")
+    return ADMIN_MENU    
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
