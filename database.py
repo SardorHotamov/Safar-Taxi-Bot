@@ -121,18 +121,26 @@ def get_all_users():
 
 def get_all_drivers():
     try:
-        drivers = list(db.drivers.find({}, {"chat_id": 1, "name": 1}))  # Faqat kerakli maydonlarni olish
-        return [{"chat_id": str(d.get('chat_id', '')), "name": d.get('name', 'Noma’lum')} for d in drivers]
+        drivers = list(db.drivers.find())
+        if not drivers:
+            print("Haydovchilar topilmadi!")
+        else:
+            print(f"Haydovchilar: {drivers}")
+        return drivers  # Hozircha o'zgartirmaymiz, faqat tekshirish
     except Exception as e:
-        print(f"Haydovchilarni olishda xatolik: {e}")
+        print(f"Xatolik: {e}")
         return []
 
 def get_all_passengers():
     try:
-        passengers = list(db.passengers.find({}, {"chat_id": 1, "name": 1}))
-        return [{"chat_id": str(p.get('chat_id', '')), "name": p.get('name', 'Noma’lum')} for p in passengers]
+        passengers = list(db.passengers.find())
+        if not passengers:
+            print("Yo‘lovchilar topilmadi!")
+        else:
+            print(f"Yo‘lovchilar: {passengers}")
+        return passengers
     except Exception as e:
-        print(f"Yo‘lovchilarni olishda xatolik: {e}")
+        print(f"Xatolik: {e}")
         return []
 
 def get_matching_passengers(from_region: str, from_district: str, to_region: str, to_district: str) -> List[Tuple[int]]:

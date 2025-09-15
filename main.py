@@ -836,14 +836,20 @@ async def admin_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def admin_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     from database import get_all_drivers
     drivers = get_all_drivers()
-    await update.message.reply_text(f"Haydovchilar soni: {len(drivers)}\n{drivers}")
+    if not drivers:
+        await update.message.reply_text("Haydovchilar topilmadi!")
+        return ADMIN_MENU
+    await update.message.reply_text(f"Haydovchilar soni: {len(drivers)}\nRo'yxat: {str(drivers)}")
     return ADMIN_MENU
 
 async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     from database import get_all_passengers
     passengers = get_all_passengers()
-    await update.message.reply_text(f"Yo‘lovchilar soni: {len(passengers)}\n{passengers}")
-    return ADMIN_MENU    
+    if not passengers:
+        await update.message.reply_text("Yo‘lovchilar topilmadi!")
+        return ADMIN_MENU
+    await update.message.reply_text(f"Yo‘lovchilar soni: {len(passengers)}\nRo'yxat: {str(passengers)}")
+    return ADMIN_MENU   
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
