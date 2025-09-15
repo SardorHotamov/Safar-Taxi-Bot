@@ -839,7 +839,10 @@ async def admin_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     if not drivers:
         await update.message.reply_text("Haydovchilar topilmadi!")
         return ADMIN_MENU
-    await update.message.reply_text(f"Haydovchilar soni: {len(drivers)}\nRo'yxat: {str(drivers)}")
+    message = f"Haydovchilar soni: {len(drivers)}\n"
+    for d in drivers:
+        message += f"ID: {d.get('chat_id', 'N/A')}, Ism: {d.get('name', 'N/A')}\n"
+    await update.message.reply_text(message)
     return ADMIN_MENU
 
 async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -848,8 +851,11 @@ async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not passengers:
         await update.message.reply_text("Yo‘lovchilar topilmadi!")
         return ADMIN_MENU
-    await update.message.reply_text(f"Yo‘lovchilar soni: {len(passengers)}\nRo'yxat: {str(passengers)}")
-    return ADMIN_MENU   
+    message = f"Yo‘lovchilar soni: {len(passengers)}\n"
+    for p in passengers:
+        message += f"ID: {p.get('chat_id', 'N/A')}, Ism: {p.get('name', 'N/A')}\n"
+    await update.message.reply_text(message)
+    return ADMIN_MENU
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
