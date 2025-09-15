@@ -121,21 +121,17 @@ def get_all_users():
 
 def get_all_drivers():
     try:
-        drivers = list(db.drivers.find())
-        if not drivers:
-            print("Haydovchilar topilmadi, ma’lumot qo‘shish zarur!")
-            return []
-        return drivers  # To‘liq hujjatlarni qaytaradi
+        drivers = list(db.drivers.find({}, {"_id": 0, "chat_id": 1, "name": 1}))  # Faqat kerakli maydonlar
+        print(f"Haydovchilar: {drivers}")  # Debug uchun
+        return drivers
     except Exception as e:
         print(f"Xatolik: {e}")
         return []
 
 def get_all_passengers():
     try:
-        passengers = list(db.passengers.find())
-        if not passengers:
-            print("Yo‘lovchilar topilmadi, ma’lumot qo‘shish zarur!")
-            return []
+        passengers = list(db.passengers.find({}, {"_id": 0, "chat_id": 1, "name": 1}))
+        print(f"Yo‘lovchilar: {passengers}")
         return passengers
     except Exception as e:
         print(f"Xatolik: {e}")
