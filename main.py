@@ -1128,51 +1128,46 @@ async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await update.message.reply_text("Siz yo‘lovchi emassiz!")
         return ConversationHandler.END
     from database import get_matching_drivers
-    drivers = get_matching_drivers(user.get('route')) or [{"name": "Test Driver", "chat_id": 123456789}]  # Sinov
+    drivers = get_matching_drivers(user.get('route'))
     if not drivers:
         await update.message.reply_text("Haydovchi topilmadi!")
         return ConversationHandler.END
-    keyboard = [[KeyboardButton(driver['name'])] for driver in drivers] + [[KeyboardButton(BTN_BACK)]]
+    keyboard = [[KeyboardButton(driver.get('full_name', 'Noma’lum haydovchi'))] for driver in drivers] + [[KeyboardButton(BTN_BACK)]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text("Haydovchini tanlang:", reply_markup=reply_markup)
     context.user_data['drivers'] = drivers
-    return SELECT_DRIVER
+    return "SELECT_DRIVER"
 
 async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    selected_driver = update.message.text
+    selected_name = update.message.text
     drivers = context.user_data.get('drivers', [])
-    driver = next((d for d in drivers if d['name'] == selected_driver), None)
+    driver = next((d for d in drivers if d.get('full_name') == selected_name), None)
     if not driver or update.message.text == BTN_BACK:
         await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
         return ConversationHandler.END
     context.user_data['selected_driver'] = driver
-    keyboard = [[KeyboardButton("Geolokatsiya yuborish", request_location=True)]]
+    keyboard = [[KeyboardButton("Geolokatsiya yuborish", request_location=True)], [KeyboardButton(BTN_BACK)]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-    await update.message.reply_text("Geolokatsiyangizni yuboring:", reply_markup=reply_markup)
-    return ConversationHandler.END
+    await update.message.reply_text(f"Haydovchi: {driver.get('full_name', 'Noma’lum')}. Geolokatsiyangizni yuboring:", reply_markup=reply_markup)
+    return "LOCATION_STATE"
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.message.location:
         latitude = update.message.location.latitude
         longitude = update.message.location.longitude
         driver = context.user_data.get('selected_driver')
-        if driver and 'chat_id' in driver:
-            await context.bot.send_message(
-                chat_id=driver['chat_id'],
-                text=f"Yo‘lovchi geolokatsiya: {latitude}, {longitude}"
-            )
+        if driver and 'user_id' in driver:
+            await context.bot.send_message(chat_id=driver['user_id'], text=f"Yo‘lovchi geolokatsiya: {latitude}, {longitude}")
         await update.message.reply_text("Geolokatsiya yuborildi!", reply_markup=main_menu_keyboard())
     return ConversationHandler.END
 
 location_conv = ConversationHandler(
     entry_points=[MessageHandler(filters.Regex(f"^{BTN_SEND_GEO}$"), request_location)],
     states={
-        SELECT_DRIVER: [
-            MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver),
-            MessageHandler(filters.LOCATION & ~filters.COMMAND, handle_location)
-        ],
+        "SELECT_DRIVER": [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)],
+        "LOCATION_STATE": [MessageHandler(filters.LOCATION, handle_location)],
     },
-    fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), lambda update, context: ConversationHandler.END)],
+    fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start)],
     per_chat=True,
 )
 
