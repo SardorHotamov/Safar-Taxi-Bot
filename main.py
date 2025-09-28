@@ -839,8 +839,10 @@ async def admin_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     if not drivers:
         await update.message.reply_text("Hech qanday haydovchi topilmadi!")
         return ADMIN_MENU
-    message = f"Haydovchilar ro‘yxati: {drivers}"
-    await update.message.reply_text(message)
+    message = "Haydovchilar ro‘yxati:\n"
+    for i, d in enumerate(drivers, 1):
+        message += f"{i}. ({d['user_id']}, {d['full_name']}, {d['phone']}, {d.get('car_model', 'N/A')}, {d.get('car_color', 'N/A')}, {d.get('car_number', 'N/A')}),\n"
+    await update.message.reply_text(message.rstrip(','))
     return ADMIN_MENU
 
 async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -849,8 +851,10 @@ async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not passengers:
         await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
         return ADMIN_MENU
-    message = f"Yo‘lovchilar ro‘yxati: {passengers}"
-    await update.message.reply_text(message)
+    message = "Yo‘lovchilar ro‘yxati:\n"
+    for i, p in enumerate(passengers, 1):
+        message += f"{i}. ({p['user_id']}, {p['full_name']}, {p['phone']}),\n"
+    await update.message.reply_text(message.rstrip(','))
     return ADMIN_MENU
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -898,35 +902,35 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def send_to_all_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        await update.message.reply_text("Sizda huquq yo‘q!")
         return ADMIN_MENU
-    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
+    await update.message.reply_text("Xabar matnini kiriting:")
     return "SEND_TO_ALL_GROUPS"
 
 async def handle_send_to_all_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     message_text = update.message.text
-    from database import get_all_drivers, get_all_passengers
-    drivers = get_all_drivers()
-    passengers = get_all_passengers()
-    all_users = drivers + passengers
-    if not all_users:
+    from database import get_all_users
+    users = get_all_users()
+    if not users:
         await update.message.reply_text("Hech qanday foydalanuvchi topilmadi!")
         return ADMIN_MENU
-    for user in all_users:
+    success_count = 0
+    for user in users:
+        name = user.get('full_name', 'Noma’lum')
+        personalized_message = f"Salom {name}! {message_text}"
         try:
-            chat_id = user[0] if isinstance(user, tuple) else user.get('chat_id', 'N/A')
-            await context.bot.send_message(chat_id=chat_id, text=message_text)
-            logger.info(f"Message sent to chat_id {chat_id}")
+            await context.bot.send_message(chat_id=user['user_id'], text=personalized_message)
+            success_count += 1
         except Exception as e:
-            logger.error(f"Failed to send to {chat_id}: {str(e)}")
-    await update.message.reply_text("Xabar yuborildi!")
+            print(f"Xabar yuborishda xatolik: {e}")
+    await update.message.reply_text(f"Xabar {success_count} ta foydalanuvchiga yuborildi!")
     return ADMIN_MENU
 
-async def send_message_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def send_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        await update.message.reply_text("Sizda huquq yo‘q!")
         return ADMIN_MENU
-    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
+    await update.message.reply_text("Xabar matnini kiriting:")
     return "SEND_TO_DRIVERS"
 
 async def handle_send_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -936,20 +940,23 @@ async def handle_send_to_drivers(update: Update, context: ContextTypes.DEFAULT_T
     if not drivers:
         await update.message.reply_text("Hech qanday haydovchi topilmadi!")
         return ADMIN_MENU
+    success_count = 0
     for driver in drivers:
+        name = driver.get('full_name', 'Noma’lum')
+        personalized_message = f"Salom {name}! {message_text}"
         try:
-            await context.bot.send_message(chat_id=driver.get('chat_id', 'N/A'), text=message_text)
-            logger.info(f"Message sent to chat_id {driver.get('chat_id', 'N/A')}")
+            await context.bot.send_message(chat_id=driver['user_id'], text=personalized_message)
+            success_count += 1
         except Exception as e:
-            logger.error(f"Failed to send to {driver.get('chat_id', 'N/A')}: {str(e)}")
-    await update.message.reply_text("Xabar haydovchilarga muvaffaqiyatli yuborildi!")
+            print(f"Xabar yuborishda xatolik: {e}")
+    await update.message.reply_text(f"Xabar {success_count} ta haydovchiga yuborildi!")
     return ADMIN_MENU
 
-async def send_message_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def send_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
+        await update.message.reply_text("Sizda huquq yo‘q!")
         return ADMIN_MENU
-    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
+    await update.message.reply_text("Xabar matnini kiriting:")
     return "SEND_TO_PASSENGERS"
 
 async def handle_send_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -959,13 +966,16 @@ async def handle_send_to_passengers(update: Update, context: ContextTypes.DEFAUL
     if not passengers:
         await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
         return ADMIN_MENU
+    success_count = 0
     for passenger in passengers:
+        name = passenger.get('full_name', 'Noma’lum')
+        personalized_message = f"Salom {name}! {message_text}"
         try:
-            await context.bot.send_message(chat_id=passenger.get('chat_id', 'N/A'), text=message_text)
-            logger.info(f"Message sent to chat_id {passenger.get('chat_id', 'N/A')}")
+            await context.bot.send_message(chat_id=passenger['user_id'], text=personalized_message)
+            success_count += 1
         except Exception as e:
-            logger.error(f"Failed to send to {passenger.get('chat_id', 'N/A')}: {str(e)}")
-    await update.message.reply_text("Xabar yo‘lovchilarga muvaffaqiyatli yuborildi!")
+            print(f"Xabar yuborishda xatolik: {e}")
+    await update.message.reply_text(f"Xabar {success_count} ta yo‘lovchiga yuborildi!")
     return ADMIN_MENU
 
 async def delete_user_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
