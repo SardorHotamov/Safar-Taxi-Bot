@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from pymongo.errors import ServerSelectionTimeoutError  # Tuzatildi
+from pymongo.errors import ServerSelectionTimeoutError
 import os
 from typing import Optional, Tuple, List
 from dotenv import load_dotenv
@@ -18,7 +18,7 @@ try:
     client = MongoClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
     client.server_info()  # Ulanishni tekshirish
     db = client['SafarTaxiBot']
-except ServerSelectionTimeoutError as e:  # Tuzatildi
+except ServerSelectionTimeoutError as e:
     raise RuntimeError(f"MongoDB ulanishda xatolik: {e}")
 
 def init_db():
@@ -63,14 +63,6 @@ def save_trip(user_id: int, role: str, from_region: str, from_district: str, to_
     }
     db.trips.replace_one({"user_id": user_id}, trip_data, upsert=True)
 
-def delete_expired_trips():
-    threshold = datetime.utcnow() - timedelta(hours=24)
-    expired_trips = db.trips.find({"created_at": {"$lt": threshold}})
-    for trip in expired_trips:
-        db.users.delete_one({"user_id": trip["user_id"]})
-        db.trips.delete_one({"user_id": trip["user_id"]})
-    return len(list(expired_trips))
-
 def get_user(user_id: int) -> Optional[dict]:
     """Foydalanuvchi ma'lumotlarini olish."""
     user = db.users.find_one({"user_id": user_id})
@@ -80,62 +72,26 @@ def get_user(user_id: int) -> Optional[dict]:
             'role': user['role'],
             'full_name': user['full_name'],
             'phone': user['phone'],
-            'car_model': user['car_model'],
-            'car_color': user['car_color'],
-            'car_number': user['car_number']
+            'car_model': user.get('car_model'),
+            'car_color': user.get('car_color'),
+            'car_number': user.get('car_number')
         }
     return None
 
-def get_user_trip(user_id: int) -> Optional[dict]:
-    """Foydalanuvchining sayohat ma'lumotlarini olish."""
-    trip = db.trips.find_one({"user_id": user_id})
-    if trip:
-        return {
-            'user_id': trip['user_id'],
-            'role': trip['role'],
-            'from_region': trip['from_region'],
-            'from_district': trip['from_district'],
-            'to_region': trip['to_region'],
-            'to_district': trip['to_district'],
-            'mahalla': trip['mahalla'],
-            'price': trip['price'],
-            'seats': trip['seats'],
-            'when_mode': trip['when_mode'],
-            'when_date': trip['when_date'],
-            'when_time': trip['when_time']
-        }
-    return None
-
-def get_stats() -> Tuple[int, int]:
-    """Statistikani olish."""
-    drivers_count = db.users.count_documents({"role": "driver"})
-    passengers_count = db.users.count_documents({"role": "passenger"})
-    return drivers_count, passengers_count    
-
-def get_all_users():
-    # Barcha foydalanuvchilarni olish uchun SQL yoki boshqa logikani qo‘shing
-    # Masalan, haydovchilar va yo‘lovchilarni birlashtirish:
-    drivers = get_all_drivers()
-    passengers = get_all_passengers()
-    return drivers + passengers
+def get_stats():
+    """Statistika olish."""
+    user_count = db.users.count_documents({})
+    driver_count = db.users.count_documents({"role": "driver"})
+    passenger_count = db.users.count_documents({"role": "passenger"})
+    return f"Foydalanuvchilar soni: {user_count}\nHaydovchilar soni: {driver_count}\nYo‘lovchilar soni: {passenger_count}"
 
 def get_all_drivers():
-    try:
-        drivers = list(db.drivers.find())
-        print(f"Topilgan haydovchilar: {drivers}")  # Debug uchun
-        return drivers
-    except Exception as e:
-        print(f"Xatolik: {e}")
-        return []
+    """Barcha haydovchilarni olish."""
+    return list(db.users.find({"role": "driver"}))
 
 def get_all_passengers():
-    try:
-        passengers = list(db.passengers.find())
-        print(f"Topilgan yo‘lovchilar: {passengers}")
-        return passengers
-    except Exception as e:
-        print(f"Xatolik: {e}")
-        return []
+    """Barcha yo'lovchilarni olish."""
+    return list(db.users.find({"role": "passenger"}))
 
 def get_matching_passengers(from_region: str, from_district: str, to_region: str, to_district: str) -> List[Tuple[int]]:
     """Mos yo'lovchilarni topish."""
@@ -168,14 +124,36 @@ def delete_trip(user_id: int):
     db.trips.delete_one({"user_id": user_id})
 
 def delete_user(user_id: int):
+    """Foydalanuvchini o'chirish."""
     result = db.users.delete_one({"user_id": user_id})
-    return result.deleted_count    
+    return result.deleted_count
 
 def get_user_count():
-    return db.users.count_documents({})  
+    """Umumiy foydalanuvchilar soni."""
+    return db.users.count_documents({})
 
 def get_driver_count():
+    """Haydovchilar soni."""
     return db.users.count_documents({"role": "driver"})
 
 def get_passenger_count():
+    """Yo‘lovchilar soni."""
     return db.users.count_documents({"role": "passenger"})
+
+def get_all_users():
+    """Barcha foydalanuvchilarni olish."""
+    return list(db.users.find())
+
+# Admin uchun xabar yuborish uchun kerak bo'lsa
+def get_all_drivers_chat_ids():
+    return [user['chat_id'] for user in db.users.find({"role": "driver"}, {"chat_id": 1}) if 'chat_id' in user]
+
+def get_all_passengers_chat_ids():
+    return [user['chat_id'] for user in db.users.find({"role": "passenger"}, {"chat_id": 1}) if 'chat_id' in user]
+
+def get_all_users_chat_ids():
+    return [user['chat_id'] for user in db.users.find({}, {"chat_id": 1}) if 'chat_id' in user]
+
+# Geolokatsiya uchun haydovchilarni olish (sinov)
+def get_matching_drivers(route: str) -> List[dict]:
+    return [{"name": "Haydovchi 1", "chat_id": "123456789"}, {"name": "Haydovchi 2", "chat_id": "987654321"}]</DOCUMENT>
