@@ -93,6 +93,9 @@ BTN_ADMIN_PASSENGERS = "Yo‘lovchilar ma'lumotlari"
 BTN_ADMIN_SEND_ALL = "Barchaga xabar"
 BTN_ADMIN_SEND_DRIVERS = "Haydovchilarga xabar"
 BTN_ADMIN_SEND_PASSENGERS = "Yo‘lovchilarga xabar"
+BTN_ADMIN_SEND_ALL = "Barchaga xabar"
+BTN_ADMIN_SEND_DRIVERS = "Haydovchilarga xabar"
+BTN_ADMIN_SEND_PASSENGERS = "Yo‘lovchilarga xabar"
 BTN_ADMIN_REPLY = "Xabar yuborish"
 BTN_DELETE_USER_PROMPT = "Foydalanuvchini o‘chirish"
 
@@ -900,6 +903,69 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"Xato: {e}. Iltimos, to‘g‘ri formatda kiriting.", reply_markup=admin_menu_keyboard())
         return ADMIN_MENU
 
+async def send_to_all_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda huquq yo‘q!")
+        return ADMIN_MENU
+    await update.message.reply_text("Xabar matnini kiriting:")
+    return "SEND_TO_ALL_GROUPS"
+
+async def handle_send_to_all_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    message_text = update.message.text
+    from database import get_all_users
+    users = get_all_users()
+    if not users:
+        await update.message.reply_text("Hech qanday foydalanuvchi topilmadi!")
+        return ADMIN_MENU
+    for user in users:
+        name = user.get('full_name', 'Noma’lum')
+        personalized_message = f"Salom {name}! {message_text}"
+        await context.bot.send_message(chat_id=user.get('user_id', 'N/A'), text=personalized_message)
+    await update.message.reply_text("Xabar barchaga yuborildi!")
+    return ADMIN_MENU
+
+async def send_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda huquq yo‘q!")
+        return ADMIN_MENU
+    await update.message.reply_text("Xabar matnini kiriting:")
+    return "SEND_TO_DRIVERS"
+
+async def handle_send_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    message_text = update.message.text
+    from database import get_all_drivers
+    drivers = get_all_drivers()
+    if not drivers:
+        await update.message.reply_text("Hech qanday haydovchi topilmadi!")
+        return ADMIN_MENU
+    for driver in drivers:
+        name = driver.get('full_name', 'Noma’lum')
+        personalized_message = f"Salom {name}! {message_text}"
+        await context.bot.send_message(chat_id=driver.get('user_id', 'N/A'), text=personalized_message)
+    await update.message.reply_text("Xabar haydovchilarga yuborildi!")
+    return ADMIN_MENU
+
+async def send_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.effective_user.id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda huquq yo‘q!")
+        return ADMIN_MENU
+    await update.message.reply_text("Xabar matnini kiriting:")
+    return "SEND_TO_PASSENGERS"
+
+async def handle_send_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    message_text = update.message.text
+    from database import get_all_passengers
+    passengers = get_all_passengers()
+    if not passengers:
+        await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
+        return ADMIN_MENU
+    for passenger in passengers:
+        name = passenger.get('full_name', 'Noma’lum')
+        personalized_message = f"Salom {name}! {message_text}"
+        await context.bot.send_message(chat_id=passenger.get('user_id', 'N/A'), text=personalized_message)
+    await update.message.reply_text("Xabar yo‘lovchilarga yuborildi!")
+    return ADMIN_MENU
+
 async def send_message_to_all(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Barcha foydalanuvchilarga xabar yuborish."""
     if update.effective_user.id not in ADMIN_IDS:
@@ -1059,6 +1125,9 @@ route_conv = ConversationHandler(
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_SEND_ALL}$"), send_message_to_all),
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_SEND_DRIVERS}$"), send_message_to_drivers),
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_SEND_PASSENGERS}$"), send_message_to_passengers),
+                MessageHandler(filters.Regex(f"^{BTN_ADMIN_SEND_ALL}$"), send_to_all_groups),
+                MessageHandler(filters.Regex(f"^{BTN_ADMIN_SEND_DRIVERS}$"), send_to_drivers),
+                MessageHandler(filters.Regex(f"^{BTN_ADMIN_SEND_PASSENGERS}$"), send_to_passengers),
                 MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start),
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
             ],
@@ -1066,6 +1135,9 @@ route_conv = ConversationHandler(
             "SEND_ALL_MESSAGE": [MessageHandler(filters.TEXT & ~filters.COMMAND, process_message)],
             "SEND_DRIVERS_MESSAGE": [MessageHandler(filters.TEXT & ~filters.COMMAND, process_message)],
             "SEND_PASSENGERS_MESSAGE": [MessageHandler(filters.TEXT & ~filters.COMMAND, process_message)],
+            "SEND_TO_ALL_GROUPS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_all_groups)],
+            "SEND_TO_DRIVERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_drivers)],
+            "SEND_TO_PASSENGERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_passengers)],
             "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
         },
         fallbacks=[
@@ -1097,8 +1169,8 @@ async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not user or user.get('role') != 'passenger':
         await update.message.reply_text("Siz yo‘lovchi emassiz!")
         return ConversationHandler.END
-    from database import get_all_drivers
-    drivers = get_all_drivers()
+    from database import get_matching_drivers
+    drivers = get_matching_drivers(user.get('route'))
     if not drivers:
         await update.message.reply_text("Haydovchi topilmadi!")
         return ConversationHandler.END
@@ -1106,7 +1178,7 @@ async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text("Haydovchini tanlang:", reply_markup=reply_markup)
     context.user_data['drivers'] = drivers
-    return SELECT_DRIVER
+    return "SELECT_DRIVER"
 
 async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     selected_name = update.message.text
@@ -1116,10 +1188,10 @@ async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
         return ConversationHandler.END
     context.user_data['selected_driver'] = driver
-    keyboard = [[KeyboardButton("Geolokatsiya yuborish", request_location=True)], [KeyboardButton(BTN_BACK)]]
+    keyboard = [[KeyboardButton("Geolokatsiya yuborish", request_location=True)]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text(f"Haydovchi: {driver.get('full_name', 'Noma’lum')}. Geolokatsiyangizni yuboring:", reply_markup=reply_markup)
-    return "LOCATION_STATE"
+    return ConversationHandler.END
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.message.location:
@@ -1134,8 +1206,7 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 location_conv = ConversationHandler(
     entry_points=[MessageHandler(filters.Regex(f"^{BTN_SEND_GEO}$"), request_location)],
     states={
-        SELECT_DRIVER: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)],
-        "LOCATION_STATE": [MessageHandler(filters.LOCATION, handle_location)],
+        "SELECT_DRIVER": [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)],
     },
     fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start)],
     per_chat=True,
