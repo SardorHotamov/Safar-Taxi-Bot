@@ -523,7 +523,7 @@ async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         'when_date': context.user_data.get('when_date'),
         'when_time': context.user_data.get('when_time')
     }
-    save_trip(user_id, trip)
+    save_trip(user_id, trip)  # Trip obyekti sifatida uzatish
     from database import get_matching_drivers
     matches = get_matching_drivers(
         trip['from_region'],
