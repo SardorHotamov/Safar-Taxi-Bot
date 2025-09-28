@@ -156,4 +156,4 @@ def get_all_users_chat_ids():
 
 # Geolokatsiya uchun haydovchilarni olish (sinov)
 def get_matching_drivers(route: str) -> List[dict]:
-    return [{"name": "Haydovchi 1", "chat_id": "123456789"}, {"name": "Haydovchi 2", "chat_id": "987654321"}]</DOCUMENT>
+    return [{"name": "Haydovchi 1", "chat_id": "123456789"}, {"name": "Haydovchi 2", "chat_id": "987654321"}]
