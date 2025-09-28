@@ -507,75 +507,34 @@ async def when_plan_hour(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await save_and_notify(update, context)
     return AFTER_ROUTE_MENU
 
-async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = update.effective_user.id
-    role = context.user_data.get('role')
-    if not role:
-        await update.message.reply_text("Xatolik: Rol tanlanmagan. Iltimos, qaytadan boshlang.", reply_markup=role_keyboard())
-        return CHOOSE_ROLE
-    price = context.user_data.get('price') if role == "driver" else None
-    when_mode = context.user_data.get('when_mode')
-    when_date = context.user_data.get('when_date') if when_mode == 'plan' else None
-    when_time = context.user_data.get('when_time') if when_mode == 'plan' else None
-    seats = context.user_data.get('seats')
-    try:
-        save_trip(
-            user_id,
-            role,
-            context.user_data['from_region'],
-            context.user_data['from_district'],
-            context.user_data['to_region'],
-            context.user_data['to_district'],
-            context.user_data.get('mahalla'),
-            price,
-            seats,
-            when_mode,
-            when_date,
-            when_time
-        )
-    except Exception as e:
-        await update.message.reply_text(f"Yo‘nalishni saqlashda xato yuz berdi: {e}. Iltimos, qaytadan urinib ko‘ring.")
-        return ConversationHandler.END
-    trip = get_user_trip(user_id)
-    if not trip:
-        await update.message.reply_text("Yo‘nalish saqlanmadi. Iltimos, qaytadan urinib ko‘ring.")
-        return ConversationHandler.END
-    await update.message.reply_text(format_trip_info(trip))
-    rm = post_route_menu_driver() if role == "driver" else post_route_menu_passenger()
-    await update.message.reply_text("Safar boshlanganida Ketdik tugmasini bosishni unutmang\n Quyidagi tugmalardan foydalaning", reply_markup=rm)
-    # Notify matching users
-    user = get_user(user_id)
-    if not user:
-        await update.message.reply_text("Foydalanuvchi ma'lumotlari topilmadi.")
-        return ConversationHandler.END
-    if role == "driver":
-        matches = get_matching_passengers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
-        for m in matches:
-            match_id = m[0]
-            match_user = get_user(match_id)
-            if not match_user:
-                continue
-            try:
-                await context.bot.send_message(
-                    chat_id=match_id,
-                    text=f"Yangi haydovchi qo'shildi:\n{format_match_info(user, trip, is_driver=True)}"
-                )
-            except Exception as e:
-                print(f"Xato yuborishda (yo'lovchi {match_id}): {e}")
-    else:
-        matches = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
-        for m in matches:
-            match_id = m[0]
-            match_user = get_user(match_id)
-            if not match_user:
-                continue
-            try:
-                await context.bot.send_message(
-                    chat_id=match_id,
-                    text=f"Yangi yo'lovchi qo'shildi:\n{format_match_info(user, trip, is_driver=False)}"
-                )
-            except Exception as e:
-                print(f"Xato yuborishda (haydovchi {match_id}): {e}")
+    trip = {
+        'user_id': user_id,
+        'role': 'passenger',
+        'from_region': context.user_data.get('from_region'),
+        'from_district': context.user_data.get('from_district'),
+        'to_region': context.user_data.get('to_region'),
+        'to_district': context.user_data.get('to_district'),
+        'mahalla': context.user_data.get('mahalla'),
+        'price': context.user_data.get('price'),
+        'seats': context.user_data.get('seats'),
+        'when_mode': context.user_data.get('when_mode'),
+        'when_date': context.user_data.get('when_date'),
+        'when_time': context.user_data.get('when_time')
+    }
+    save_trip(user_id, trip)
+    from database import get_matching_drivers
+    matches = get_matching_drivers(
+        trip['from_region'],
+        trip['from_district'],
+        trip['to_region'],
+        trip['to_district']
+    )
+    if matches:
+        for driver in matches:
+            await context.bot.send_message(chat_id=driver['user_id'], text=f"Yangi yo‘lovchi: {trip['user_id']}")
+    await update.message.reply_text("Sayohat saqlandi va mos haydovchilarga xabar yuborildi!")
 
 # ------------------ AFTER ROUTE MENU ------------------
 async def after_route_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
