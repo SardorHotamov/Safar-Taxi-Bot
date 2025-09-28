@@ -168,6 +168,24 @@ def get_all_users():
     """Barcha foydalanuvchilarni olish."""
     return list(db.users.find())
 
+def get_all_drivers():
+    try:
+        drivers = list(db.users.find({"role": "driver"}))
+        print(f"Topilgan haydovchilar: {drivers}")  # Debug uchun
+        return drivers
+    except Exception as e:
+        print(f"Xatolik: {e}")
+        return []
+
+def get_all_passengers():
+    try:
+        passengers = list(db.users.find({"role": "passenger"}))
+        print(f"Topilgan yo‘lovchilar: {passengers}")
+        return passengers
+    except Exception as e:
+        print(f"Xatolik: {e}")
+        return []
+
 # Admin uchun xabar yuborish uchun kerak bo'lsa
 def get_all_drivers_chat_ids():
     return [user['chat_id'] for user in db.users.find({"role": "driver"}, {"chat_id": 1}) if 'chat_id' in user]

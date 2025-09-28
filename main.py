@@ -837,11 +837,9 @@ async def admin_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     from database import get_all_drivers
     drivers = get_all_drivers()
     if not drivers:
-        await update.message.reply_text("Haydovchilar topilmadi!")
+        await update.message.reply_text("Hech qanday haydovchi topilmadi!")
         return ADMIN_MENU
-    message = f"Haydovchilar soni: {len(drivers)}\n"
-    for d in drivers:
-        message += f"ID: {d.get('chat_id', 'N/A')}, Ism: {d.get('name', 'N/A')}\n"
+    message = f"Haydovchilar ro‘yxati: {drivers}"
     await update.message.reply_text(message)
     return ADMIN_MENU
 
@@ -849,11 +847,9 @@ async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     from database import get_all_passengers
     passengers = get_all_passengers()
     if not passengers:
-        await update.message.reply_text("Yo‘lovchilar topilmadi!")
+        await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
         return ADMIN_MENU
-    message = f"Yo‘lovchilar soni: {len(passengers)}\n"
-    for p in passengers:
-        message += f"ID: {p.get('chat_id', 'N/A')}, Ism: {p.get('name', 'N/A')}\n"
+    message = f"Yo‘lovchilar ro‘yxati: {passengers}"
     await update.message.reply_text(message)
     return ADMIN_MENU
 
