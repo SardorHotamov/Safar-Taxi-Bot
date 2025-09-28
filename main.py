@@ -1193,8 +1193,8 @@ def main():
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
     app.add_handler(CommandHandler("send_all", send_to_all_groups))
-    app.add_handler(CommandHandler("send_drivers", send_message_to_drivers))
-    app.add_handler(CommandHandler("send_passengers", send_message_to_passengers))
+    app.add_handler(CommandHandler("send_drivers", send_to_drivers))
+    app.add_handler(CommandHandler("send_passengers", send_to_passengers))
 
     # Webhook ni sozlash
     logger.info("Bot webhook rejimida ishga tushdi...")
