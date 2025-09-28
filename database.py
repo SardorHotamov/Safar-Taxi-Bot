@@ -115,6 +115,30 @@ def get_matching_drivers(from_region: str, from_district: str, to_region: str, t
     }, {"user_id": 1})
     return [(d["user_id"],) for d in drivers]
 
+def get_user_trip(user_id: int) -> Optional[dict]:
+    """Foydalanuvchining sayohat ma'lumotlarini olish."""
+    try:
+        trip = db.trips.find_one({"user_id": user_id})
+        if trip:
+            return {
+                'user_id': trip['user_id'],
+                'role': trip['role'],
+                'from_region': trip['from_region'],
+                'from_district': trip['from_district'],
+                'to_region': trip['to_region'],
+                'to_district': trip['to_district'],
+                'mahalla': trip.get('mahalla'),
+                'price': trip.get('price'),
+                'seats': trip.get('seats'),
+                'when_mode': trip.get('when_mode'),
+                'when_date': trip.get('when_date'),
+                'when_time': trip.get('when_time')
+            }
+        return None
+    except Exception as e:
+        print(f"Xatolik: {e}")
+        return None
+
 def update_seats(user_id: int, seats: str):
     """Bo'sh o'rinlarni yangilash."""
     db.trips.update_one({"user_id": user_id}, {"$set": {"seats": seats}})
