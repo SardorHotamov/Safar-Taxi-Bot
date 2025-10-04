@@ -44,26 +44,24 @@ def save_user(user_id: int, role: str, full_name: str, phone: str, car_model: Op
     }
     db.users.replace_one({"user_id": user_id}, user_data, upsert=True)
 
-def save_trip(user_id: int, trip: dict) -> None:
-    try:
-        trip_data = {
-            'user_id': user_id,
-            'role': trip.get('role', 'passenger'),
-            'from_region': trip.get('from_region'),
-            'from_district': trip.get('from_district'),
-            'to_region': trip.get('to_region'),
-            'to_district': trip.get('to_district'),
-            'mahalla': trip.get('mahalla'),
-            'price': trip.get('price'),
-            'seats': trip.get('seats'),
-            'when_mode': trip.get('when_mode'),
-            'when_date': trip.get('when_date'),
-            'when_time': trip.get('when_time')
-        }
-        db.trips.update_one({'user_id': user_id}, {'$set': trip_data}, upsert=True)
-        print(f"Sayohat saqlandi: {trip_data}")
-    except Exception as e:
-        print(f"Xatolik: {e}")
+def save_trip(user_id: int, role: str, from_region: str, from_district: str, to_region: str, to_district: str,
+              mahalla: Optional[str], price: Optional[int], seats: str, when_mode: str, when_date: Optional[str], when_time: Optional[str]):
+    """Sayohatni saqlash."""
+    trip_data = {
+        "user_id": user_id,
+        "role": role,
+        "from_region": from_region,
+        "from_district": from_district,
+        "to_region": to_region,
+        "to_district": to_district,
+        "mahalla": mahalla,
+        "price": price,
+        "seats": seats,
+        "when_mode": when_mode,
+        "when_date": when_date,
+        "when_time": when_time
+    }
+    db.trips.replace_one({"user_id": user_id}, trip_data, upsert=True)
 
 def get_user(user_id: int) -> Optional[dict]:
     """Foydalanuvchi ma'lumotlarini olish."""
