@@ -582,19 +582,15 @@ async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not user or user.get('role') != 'passenger':
         await update.message.reply_text("Siz yo‘lovchi emassiz!")
         return ConversationHandler.END
-    from_region = context.user_data.get('from_region')
-    from_district = context.user_data.get('from_district')
-    to_region = context.user_data.get('to_region')
-    to_district = context.user_data.get('to_district')
-    if not all([from_region, from_district, to_region, to_district]):
-        await update.message.reply_text("Iltimos, avval yo‘nalishni belgilang!")
+    trip = get_user_trip(update.effective_user.id)
+    if not trip:
+        await update.message.reply_text("Avval yo‘nalishni belgilang!")
         return ConversationHandler.END
-    from database import get_matching_drivers
-    drivers = get_matching_drivers(from_region, from_district, to_region, to_district)
+    drivers = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
     if not drivers:
-        await update.message.reply_text("Bu yo‘nalishda haydovchi topilmadi!")
+        await update.message.reply_text("Mos haydovchi topilmadi!")
         return ConversationHandler.END
-    keyboard = [[KeyboardButton(driver.get('full_name', 'Noma’lum haydovchi'))] for driver in drivers] + [[KeyboardButton(BTN_BACK)]]
+    keyboard = [[KeyboardButton(d.get('full_name', 'Noma’lum haydovchi'))] for d in drivers] + [[KeyboardButton(BTN_BACK)]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text("Mos haydovchilarni tanlang:", reply_markup=reply_markup)
     context.user_data['drivers'] = drivers
@@ -621,7 +617,13 @@ async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         if driver and 'user_id' in driver:
             await context.bot.send_message(chat_id=driver['user_id'], text=f"Yo‘lovchi geolokatsiya: {latitude}, {longitude}")
         await update.message.reply_text("Geolokatsiya tanlangan haydovchiga yuborildi!", reply_markup=main_menu_keyboard())
-    return ConversationHandler.END
+        return ConversationHandler.END
+    elif update.message.text == BTN_BACK:
+        await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
+        return ConversationHandler.END
+    else:
+        await update.message.reply_text("Geolokatsiyani yuboring!")
+        return "LOCATION_STATE"
 
 # ------------------ AFTER ROUTE MENU ------------------
 async def after_route_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
