@@ -1198,7 +1198,7 @@ def main():
     logger.info("Bot webhook rejimida ishga tushdi...")
     app.run_webhook(
         listen="0.0.0.0",
-        port=PORT,
+        port=int(os.getenv("PORT", "5000")),  # Default 5000 ga o'zgartirildi
         url_path="webhook",
         webhook_url=WEBHOOK_URL + "/webhook"
     )
