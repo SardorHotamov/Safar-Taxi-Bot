@@ -577,54 +577,6 @@ async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 print(f"Xato yuborishda (haydovchi {match_id}): {e}")
 
-async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = get_user(update.effective_user.id)
-    if not user or user.get('role') != 'passenger':
-        await update.message.reply_text("Siz yo‘lovchi emassiz!")
-        return ConversationHandler.END
-    trip = get_user_trip(update.effective_user.id)
-    if not trip:
-        await update.message.reply_text("Avval yo‘nalishni belgilang!")
-        return ConversationHandler.END
-    drivers = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
-    if not drivers:
-        await update.message.reply_text("Mos haydovchi topilmadi!")
-        return ConversationHandler.END
-    keyboard = [[KeyboardButton(d.get('full_name', 'Noma’lum haydovchi'))] for d in drivers] + [[KeyboardButton(BTN_BACK)]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-    await update.message.reply_text("Mos haydovchilarni tanlang:", reply_markup=reply_markup)
-    context.user_data['drivers'] = drivers
-    return "SELECT_DRIVER"
-
-async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    selected_name = update.message.text
-    drivers = context.user_data.get('drivers', [])
-    driver = next((d for d in drivers if d.get('full_name') == selected_name), None)
-    if not driver or update.message.text == BTN_BACK:
-        await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
-        return ConversationHandler.END
-    context.user_data['selected_driver'] = driver
-    keyboard = [[KeyboardButton("Geolokatsiya yuborish", request_location=True)], [KeyboardButton(BTN_BACK)]]
-    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
-    await update.message.reply_text(f"Tanlangan haydovchi: {driver.get('full_name', 'Noma’lum')}. Geolokatsiyangizni yuboring:", reply_markup=reply_markup)
-    return "LOCATION_STATE"
-
-async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if update.message.location:
-        latitude = update.message.location.latitude
-        longitude = update.message.location.longitude
-        driver = context.user_data.get('selected_driver')
-        if driver and 'user_id' in driver:
-            await context.bot.send_message(chat_id=driver['user_id'], text=f"Yo‘lovchi geolokatsiya: {latitude}, {longitude}")
-        await update.message.reply_text("Geolokatsiya tanlangan haydovchiga yuborildi!", reply_markup=main_menu_keyboard())
-        return ConversationHandler.END
-    elif update.message.text == BTN_BACK:
-        await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
-        return ConversationHandler.END
-    else:
-        await update.message.reply_text("Geolokatsiyani yuboring!")
-        return "LOCATION_STATE"
-
 # ------------------ AFTER ROUTE MENU ------------------
 async def after_route_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
@@ -885,24 +837,24 @@ async def admin_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     from database import get_all_drivers
     drivers = get_all_drivers()
     if not drivers:
-        await update.message.reply_text("Hech qanday haydovchi topilmadi!")
+        await update.message.reply_text("Haydovchilar topilmadi!")
         return ADMIN_MENU
-    message = "Haydovchilar ro‘yxati:\n"
-    for i, d in enumerate(drivers, 1):
-        message += f"{i}. ({d['user_id']}, {d['full_name']}, {d['phone']}, {d.get('car_model', 'N/A')}, {d.get('car_color', 'N/A')}, {d.get('car_number', 'N/A')}),\n"
-    await update.message.reply_text(message.rstrip(','))
+    message = f"Haydovchilar soni: {len(drivers)}\n"
+    for d in drivers:
+        message += f"ID: {d.get('chat_id', 'N/A')}, Ism: {d.get('name', 'N/A')}\n"
+    await update.message.reply_text(message)
     return ADMIN_MENU
 
 async def admin_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     from database import get_all_passengers
     passengers = get_all_passengers()
     if not passengers:
-        await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
+        await update.message.reply_text("Yo‘lovchilar topilmadi!")
         return ADMIN_MENU
-    message = "Yo‘lovchilar ro‘yxati:\n"
-    for i, p in enumerate(passengers, 1):
-        message += f"{i}. ({p['user_id']}, {p['full_name']}, {p['phone']}),\n"
-    await update.message.reply_text(message.rstrip(','))
+    message = f"Yo‘lovchilar soni: {len(passengers)}\n"
+    for p in passengers:
+        message += f"ID: {p.get('chat_id', 'N/A')}, Ism: {p.get('name', 'N/A')}\n"
+    await update.message.reply_text(message)
     return ADMIN_MENU
 
 async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -950,35 +902,35 @@ async def admin_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def send_to_all_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda huquq yo‘q!")
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
         return ADMIN_MENU
-    await update.message.reply_text("Xabar matnini kiriting:")
+    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
     return "SEND_TO_ALL_GROUPS"
 
 async def handle_send_to_all_groups(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     message_text = update.message.text
-    from database import get_all_users
-    users = get_all_users()
-    if not users:
+    from database import get_all_drivers, get_all_passengers
+    drivers = get_all_drivers()
+    passengers = get_all_passengers()
+    all_users = drivers + passengers
+    if not all_users:
         await update.message.reply_text("Hech qanday foydalanuvchi topilmadi!")
         return ADMIN_MENU
-    success_count = 0
-    for user in users:
-        name = user.get('full_name', 'Noma’lum')
-        personalized_message = f"Salom {name}! {message_text}"
+    for user in all_users:
         try:
-            await context.bot.send_message(chat_id=user['user_id'], text=personalized_message)
-            success_count += 1
+            chat_id = user[0] if isinstance(user, tuple) else user.get('chat_id', 'N/A')
+            await context.bot.send_message(chat_id=chat_id, text=message_text)
+            logger.info(f"Message sent to chat_id {chat_id}")
         except Exception as e:
-            print(f"Xabar yuborishda xatolik: {e}")
-    await update.message.reply_text(f"Xabar {success_count} ta foydalanuvchiga yuborildi!")
+            logger.error(f"Failed to send to {chat_id}: {str(e)}")
+    await update.message.reply_text("Xabar yuborildi!")
     return ADMIN_MENU
 
-async def send_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def send_message_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda huquq yo‘q!")
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
         return ADMIN_MENU
-    await update.message.reply_text("Xabar matnini kiriting:")
+    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
     return "SEND_TO_DRIVERS"
 
 async def handle_send_to_drivers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -988,23 +940,20 @@ async def handle_send_to_drivers(update: Update, context: ContextTypes.DEFAULT_T
     if not drivers:
         await update.message.reply_text("Hech qanday haydovchi topilmadi!")
         return ADMIN_MENU
-    success_count = 0
     for driver in drivers:
-        name = driver.get('full_name', 'Noma’lum')
-        personalized_message = f"Salom {name}! {message_text}"
         try:
-            await context.bot.send_message(chat_id=driver['user_id'], text=personalized_message)
-            success_count += 1
+            await context.bot.send_message(chat_id=driver.get('chat_id', 'N/A'), text=message_text)
+            logger.info(f"Message sent to chat_id {driver.get('chat_id', 'N/A')}")
         except Exception as e:
-            print(f"Xabar yuborishda xatolik: {e}")
-    await update.message.reply_text(f"Xabar {success_count} ta haydovchiga yuborildi!")
+            logger.error(f"Failed to send to {driver.get('chat_id', 'N/A')}: {str(e)}")
+    await update.message.reply_text("Xabar haydovchilarga muvaffaqiyatli yuborildi!")
     return ADMIN_MENU
 
-async def send_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def send_message_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     if update.effective_user.id not in ADMIN_IDS:
-        await update.message.reply_text("Sizda huquq yo‘q!")
+        await update.message.reply_text("Sizda bu komandani ishlatish huquqi yo‘q!")
         return ADMIN_MENU
-    await update.message.reply_text("Xabar matnini kiriting:")
+    await update.message.reply_text("Iltimos, xabar matnini yuboring:")
     return "SEND_TO_PASSENGERS"
 
 async def handle_send_to_passengers(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -1014,16 +963,13 @@ async def handle_send_to_passengers(update: Update, context: ContextTypes.DEFAUL
     if not passengers:
         await update.message.reply_text("Hech qanday yo‘lovchi topilmadi!")
         return ADMIN_MENU
-    success_count = 0
     for passenger in passengers:
-        name = passenger.get('full_name', 'Noma’lum')
-        personalized_message = f"Salom {name}! {message_text}"
         try:
-            await context.bot.send_message(chat_id=passenger['user_id'], text=personalized_message)
-            success_count += 1
+            await context.bot.send_message(chat_id=passenger.get('chat_id', 'N/A'), text=message_text)
+            logger.info(f"Message sent to chat_id {passenger.get('chat_id', 'N/A')}")
         except Exception as e:
-            print(f"Xabar yuborishda xatolik: {e}")
-    await update.message.reply_text(f"Xabar {success_count} ta yo‘lovchiga yuborildi!")
+            logger.error(f"Failed to send to {passenger.get('chat_id', 'N/A')}: {str(e)}")
+    await update.message.reply_text("Xabar yo‘lovchilarga muvaffaqiyatli yuborildi!")
     return ADMIN_MENU
 
 async def delete_user_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1135,8 +1081,8 @@ route_conv = ConversationHandler(
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_PASSENGERS}$"), admin_passengers),
                 MessageHandler(filters.Regex(f"^{BTN_ADMIN_REPLY}$"), admin_reply),
                 MessageHandler(filters.Regex(f"^{SEND_TO_ALL_GROUPS}$"), send_to_all_groups),
-                MessageHandler(filters.Regex(f"^{SEND_TO_DRIVERS}$"), send_to_drivers),
-                MessageHandler(filters.Regex(f"^{SEND_TO_PASSENGERS}$"), send_to_passengers),
+                MessageHandler(filters.Regex(f"^{SEND_TO_DRIVERS}$"), send_message_to_drivers),
+                MessageHandler(filters.Regex(f"^{SEND_TO_PASSENGERS}$"), send_message_to_passengers),
                 MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start),
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
             ],
@@ -1170,15 +1116,59 @@ start_conv = ConversationHandler(
         per_chat=True,
     )
 
+async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = get_user(update.effective_user.id)
+    if not user or user.get('role') != 'passenger':
+        await update.message.reply_text("Siz yo‘lovchi emassiz!")
+        return ConversationHandler.END
+    from database import get_matching_drivers
+    drivers = get_matching_drivers(user.get('route')) or [{"name": "Test Driver", "chat_id": 123456789}]  # Sinov
+    if not drivers:
+        await update.message.reply_text("Haydovchi topilmadi!")
+        return ConversationHandler.END
+    keyboard = [[KeyboardButton(driver['name'])] for driver in drivers] + [[KeyboardButton(BTN_BACK)]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    await update.message.reply_text("Haydovchini tanlang:", reply_markup=reply_markup)
+    context.user_data['drivers'] = drivers
+    return SELECT_DRIVER
+
+async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    selected_driver = update.message.text
+    drivers = context.user_data.get('drivers', [])
+    driver = next((d for d in drivers if d['name'] == selected_driver), None)
+    if not driver or update.message.text == BTN_BACK:
+        await update.message.reply_text("Orqaga qaytildi.", reply_markup=main_menu_keyboard())
+        return ConversationHandler.END
+    context.user_data['selected_driver'] = driver
+    keyboard = [[KeyboardButton("Geolokatsiya yuborish", request_location=True)]]
+    reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+    await update.message.reply_text("Geolokatsiyangizni yuboring:", reply_markup=reply_markup)
+    return ConversationHandler.END
+
+async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    if update.message.location:
+        latitude = update.message.location.latitude
+        longitude = update.message.location.longitude
+        driver = context.user_data.get('selected_driver')
+        if driver and 'chat_id' in driver:
+            await context.bot.send_message(
+                chat_id=driver['chat_id'],
+                text=f"Yo‘lovchi geolokatsiya: {latitude}, {longitude}"
+            )
+        await update.message.reply_text("Geolokatsiya yuborildi!", reply_markup=main_menu_keyboard())
+    return ConversationHandler.END
+
 location_conv = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex(f"^{BTN_SEND_GEO}$"), request_location)],
-        states={
-            "SELECT_DRIVER": [MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver)],
-            "LOCATION_STATE": [MessageHandler(filters.LOCATION, handle_location)],
-        },
-        fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start)],
-        per_chat=True,
-    )
+    entry_points=[MessageHandler(filters.Regex(f"^{BTN_SEND_GEO}$"), request_location)],
+    states={
+        SELECT_DRIVER: [
+            MessageHandler(filters.TEXT & ~filters.COMMAND, select_driver),
+            MessageHandler(filters.LOCATION & ~filters.COMMAND, handle_location)
+        ],
+    },
+    fallbacks=[MessageHandler(filters.Regex(f"^{BTN_BACK}$"), lambda update, context: ConversationHandler.END)],
+    per_chat=True,
+)
 
 # ------------------ MAIN ------------------
 def main():
@@ -1197,8 +1187,8 @@ def main():
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
     app.add_handler(CommandHandler("send_all", send_to_all_groups))
-    app.add_handler(CommandHandler("send_drivers", send_to_drivers))
-    app.add_handler(CommandHandler("send_passengers", send_to_passengers))
+    app.add_handler(CommandHandler("send_drivers", send_message_to_drivers))
+    app.add_handler(CommandHandler("send_passengers", send_message_to_passengers))
 
     # Webhook ni sozlash
     logger.info("Bot webhook rejimida ishga tushdi...")
