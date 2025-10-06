@@ -582,15 +582,19 @@ async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not user or user.get('role') != 'passenger':
         await update.message.reply_text("Siz yo‘lovchi emassiz!")
         return ConversationHandler.END
-    trip = get_user_trip(update.effective_user.id)
-    if not trip:
-        await update.message.reply_text("Avval yo‘nalishni belgilang!")
+    from_region = context.user_data.get('from_region')
+    from_district = context.user_data.get('from_district')
+    to_region = context.user_data.get('to_region')
+    to_district = context.user_data.get('to_district')
+    if not all([from_region, from_district, to_region, to_district]):
+        await update.message.reply_text("Iltimos, avval yo‘nalishni belgilang!")
         return ConversationHandler.END
-    drivers = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
+    from database import get_matching_drivers
+    drivers = get_matching_drivers(from_region, from_district, to_region, to_district)
     if not drivers:
-        await update.message.reply_text("Mos haydovchi topilmadi!")
+        await update.message.reply_text("Bu yo‘nalishda haydovchi topilmadi!")
         return ConversationHandler.END
-    keyboard = [[KeyboardButton(d.get('full_name', 'Noma’lum haydovchi'))] for d in drivers] + [[KeyboardButton(BTN_BACK)]]
+    keyboard = [[KeyboardButton(driver.get('full_name', 'Noma’lum haydovchi'))] for driver in drivers] + [[KeyboardButton(BTN_BACK)]]
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     await update.message.reply_text("Mos haydovchilarni tanlang:", reply_markup=reply_markup)
     context.user_data['drivers'] = drivers
@@ -1198,7 +1202,7 @@ def main():
     logger.info("Bot webhook rejimida ishga tushdi...")
     app.run_webhook(
         listen="0.0.0.0",
-        port=int(os.getenv("PORT", "5000")),  # Default 5000 ga o'zgartirildi
+        port=PORT,
         url_path="webhook",
         webhook_url=WEBHOOK_URL + "/webhook"
     )
