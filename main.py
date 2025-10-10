@@ -316,7 +316,7 @@ def generate_payment_url_payme(user_id: int, amount: int, description: str) -> s
                 transaction_id = result["result"]["create_transaction"]["transaction"]
                 return f"https://payme.uz/checkout/{transaction_id}"
             logger.error(f"Payme xatosi: {result.get('error')}")
-            return f"To'lov URL yaratishda xato: {result.get('error', 'Noma'lum xato')}"
+            return f"To'lov URL yaratishda xato: {result.get('error', 'Noma’lum xato')}"
         logger.error(f"Payme API xatosi: {response.status_code} - {response.text}")
         return f"To'lov URL yaratishda xato: HTTP {response.status_code}"
     except Exception as e:
