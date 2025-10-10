@@ -79,7 +79,7 @@ def admin_menu_keyboard():
         [KeyboardButton("Yo‘lovchilar ma'lumotlari"), KeyboardButton("Barchaga xabar yuborish")],
         [KeyboardButton("Haydovchilarga xabar"), KeyboardButton("Yo‘lovchilarga xabar")],
         [KeyboardButton("Foydalanuvchini o‘chirish"), KeyboardButton("Xabar yuborish")],
-        [KeyboardButton("Orqaga")]
+        [KeyboardButton("Reklama joylash"), KeyboardButton("Orqaga")]
     ], resize_keyboard=True)
 
 def driver_selection_keyboard():
@@ -88,3 +88,11 @@ def driver_selection_keyboard():
     keyboard = [drivers[i:i + 2] for i in range(0, len(drivers), 2)]
     keyboard.append([KeyboardButton(BTN_BACK)])
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
+
+# keyboards.py (agar alohida fayl bo'lsa, aks holda main.py ga qo'shing)
+def subscription_keyboard():
+    return ReplyKeyboardMarkup([
+        ["1 kunlik (3000 so'm)", "10 kunlik (20000 so'm)"],
+        ["1 oylik (40000 so'm)", "6 oylik (180000 so'm)"],
+        ["1 yillik (320000 so'm)", BTN_BACK]
+    ], resize_keyboard=True)

@@ -3,6 +3,11 @@ import time
 import asyncio
 import os
 from datetime import datetime, timedelta
+import requests
+import base64
+import json
+import logging
+from typing import str
 
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
@@ -13,6 +18,9 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
+
+# Flask app webhook uchun
+flask_app = Flask(__name__)
 
 # ------------------ DATABASE IMPORTS ------------------
 from database import (
@@ -28,9 +36,10 @@ from database import (
     save_trip,
     update_seats,
     delete_trip,
+    has_active_subscription,
+    init_free_trial,
+    update_subscription,
 )
-
-import logging
 
 # Loglashni sozlash
 logging.basicConfig(level=logging.INFO)
@@ -46,16 +55,21 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from database import get_all_users, get_all_drivers, get_all_passengers
 
-BTN_BACK = "Orqaga"
-
 # ------------------ ENV ------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 10000))
+CLICK_MERCHANT_ID = os.getenv("CLICK_MERCHANT_ID")
+CLICK_SECRET_KEY = os.getenv("CLICK_SECRET_KEY")
+PAYME_MERCHANT_ID = os.getenv("PAYME_MERCHANT_ID")
+PAYME_SECRET_KEY = os.getenv("PAYME_SECRET_KEY")
 
 if not BOT_TOKEN or not WEBHOOK_URL:
     logger.error("BOT_TOKEN yoki WEBHOOK_URL noto‘g‘ri belgilangan!")
     raise ValueError("BOT_TOKEN yoki WEBHOOK_URL noto‘g‘ri belgilangan!")
+if not CLICK_MERCHANT_ID or not CLICK_SECRET_KEY or not PAYME_MERCHANT_ID or not PAYME_SECRET_KEY:
+    logger.error("To‘lov tizimlari uchun env o‘zgaruvchilari topilmadi!")
+    raise ValueError("CLICK yoki PAYME sozlamalari noto‘g‘ri!")
 
 ADMIN_IDS = set()
 env_admins = os.getenv("ADMINS", "")
@@ -95,6 +109,7 @@ SEND_TO_DRIVERS = "Haydovchilarga xabar"
 SEND_TO_PASSENGERS = "Yo‘lovchilarga xabar"
 BTN_ADMIN_REPLY = "Xabar yuborish"
 BTN_DELETE_USER_PROMPT = "Foydalanuvchini o‘chirish"
+BTN_ADMIN_ADVERT = "Reklama joylash"
 
 SEATS_BUTTONS = ["1", "2", "3", "4", "5", "6"]
 
@@ -123,7 +138,10 @@ SEATS_BUTTONS = ["1", "2", "3", "4", "5", "6"]
     CHANGE_SEATS_STATE,
     ADMIN_MENU,
     ADMIN_REPLY,
-) = range(21)
+    SUBSCRIPTION_STATE,  # Yangi state
+    PAYMENT_METHOD_STATE,
+    ADVERT_MESSAGE,
+) = range(24)
 
 # ------------------ HELPERS: KEYBOARDS ------------------
 from keyboards import (
@@ -152,6 +170,32 @@ def main_menu_keyboard():
 
 def back_keyboard():
     return ReplyKeyboardMarkup([[KeyboardButton(BTN_BACK)]], resize_keyboard=True)
+
+def subscription_keyboard() -> ReplyKeyboardMarkup:
+    """Obuna turlari klaviaturasini yaratish."""
+    return ReplyKeyboardMarkup([
+        ["1 kunlik (3000 so'm)", "10 kunlik (20000 so'm)"],
+        ["1 oylik (40000 so'm)", "6 oylik (180000 so'm)"],
+        ["1 yillik (320000 so'm)", BTN_BACK]
+    ], resize_keyboard=True)
+
+def payment_method_keyboard() -> ReplyKeyboardMarkup:
+    """To‘lov usullari klaviaturasini yaratish."""
+    return ReplyKeyboardMarkup([
+        ["Click orqali to'lov", "Payme orqali to'lov"],
+        [BTN_BACK]
+    ], resize_keyboard=True)
+
+def admin_menu_keyboard() -> ReplyKeyboardMarkup:
+    """Admin menyu klaviaturasini yaratish."""
+    keyboard = [
+        [KeyboardButton(BTN_ADMIN_STATS), KeyboardButton(BTN_ADMIN_DRIVERS)],
+        [KeyboardButton(BTN_ADMIN_PASSENGERS), KeyboardButton(BTN_ADMIN_REPLY)],
+        [KeyboardButton(SEND_TO_ALL_GROUPS), KeyboardButton(SEND_TO_DRIVERS)],
+        [KeyboardButton(SEND_TO_PASSENGERS), KeyboardButton(BTN_ADMIN_ADVERT)],
+        [KeyboardButton(BTN_DELETE_USER_PROMPT), KeyboardButton(BTN_BACK)]
+    ]
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 # ------------------ HELPERS: COMMON ------------------
 def is_valid_phone(p: str) -> bool:
@@ -213,6 +257,71 @@ def format_match_info(user, trip, is_driver):
                 f"👤 {full_name}\n"
                 f"📞 {phone}\n"
                 f"🪑 {seats_str}")
+
+# ------------------ PAYMENT FUNCTIONS ------------------
+def generate_payment_url_click(user_id: int, amount: int, description: str) -> str:
+    """Click orqali to'lov URL generatsiya qilish."""
+    try:
+        params = {
+            "merchant_id": CLICK_MERCHANT_ID,
+            "amount": amount,
+            "transaction_param": f"user_{user_id}_{description.replace(' ', '_')}",
+            "return_url": WEBHOOK_URL + "/payment_success",
+            "callback_url": WEBHOOK_URL + "/payment_callback_click"
+        }
+        response = requests.post("https://api.click.uz/v2/merchant/invoice/create", json=params, headers={"Authorization": f"Bearer {CLICK_SECRET_KEY}"})
+        if response.status_code == 200:
+            return response.json().get('invoice_url', 'Xato: URL topilmadi')
+        logger.error(f"Click API xatosi: {response.status_code} - {response.text}")
+        return f"To'lov URL yaratishda xato: HTTP {response.status_code}"
+    except Exception as e:
+        logger.error(f"Click to'lov URL yaratishda xato: {e}")
+        return f"To'lov URL yaratishda xato: {str(e)}"
+
+def generate_payment_url_payme(user_id: int, amount: int, description: str) -> str:
+    """Payme orqali to'lov URL generatsiya qilish."""
+    try:
+        merchant_id = PAYME_MERCHANT_ID
+        secret_key = PAYME_SECRET_KEY
+        callback_url = WEBHOOK_URL + "/payment_callback_payme"
+        amount_in_tiyin = amount * 100
+        order_id = f"user_{user_id}_{description.replace(' ', '_')}"
+        payload = {
+            "method": "CreateTransaction",
+            "params": {
+                "account": {"order_id": order_id},
+                "amount": amount_in_tiyin,
+                "currency": "UZS",
+                "detail": {
+                    "title": description,
+                    "description": f"Obuna: {description} for user {user_id}"
+                },
+                "callback_url": callback_url
+            }
+        }
+        auth_string = f"{merchant_id}:{secret_key}"
+        auth_header = base64.b64encode(auth_string.encode()).decode()
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {auth_header}"
+        }
+        response = requests.post(
+            "https://checkout.paycom.uz/api",
+            json=payload,
+            headers=headers
+        )
+        if response.status_code == 200:
+            result = response.json()
+            if result.get("result") and result["result"].get("create_transaction"):
+                transaction_id = result["result"]["create_transaction"]["transaction"]
+                return f"https://payme.uz/checkout/{transaction_id}"
+            logger.error(f"Payme xatosi: {result.get('error')}")
+            return f"To'lov URL yaratishda xato: {result.get('error', 'Noma'lum xato')}"
+        logger.error(f"Payme API xatosi: {response.status_code} - {response.text}")
+        return f"To'lov URL yaratishda xato: HTTP {response.status_code}"
+    except Exception as e:
+        logger.error(f"Payme to'lov URL yaratishda xato: {e}")
+        return f"To'lov URL yaratishda xato: {str(e)}"
 
 # ------------------ HANDLERS: START ------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -315,9 +424,21 @@ async def register_car_number(update: Update, context: ContextTypes.DEFAULT_TYPE
         await update.message.reply_text("Avtomobil raqami 7—10 belgidagi bo‘lsin:", reply_markup=back_keyboard())
         return REGISTER_CAR_NUMBER
     context.user_data['car_number'] = txt.upper()
-    save_user(update.effective_user.id, context.user_data['role'], context.user_data['full_name'], context.user_data['phone'],
-              context.user_data['car_model'], context.user_data['car_color'], context.user_data['car_number'])
-    await update.message.reply_text("Tabriklaymiz! Siz haydovchi sifatida muvaffaqiyatli ro‘yxatdan o‘tdingiz! Endi yo‘nalish tanlashingiz mumkin.", reply_markup=main_menu_driver())
+    save_user(
+        update.effective_user.id,
+        context.user_data['role'],
+        context.user_data['full_name'],
+        context.user_data['phone'],
+        context.user_data['car_model'],
+        context.user_data['car_color'],
+        context.user_data['car_number']
+    )
+    init_free_trial(update.effective_user.id)  # 5 kunlik bepul trial
+    await update.message.reply_text(
+        "Tabriklaymiz! Siz haydovchi sifatida muvaffaqiyatli ro‘yxatdan o‘tdingiz! "
+        #"Dastlabki 5 kun bepul obuna faollashtirildi. Endi yo‘nalish tanlashingiz mumkin.",
+        reply_markup=main_menu_driver()
+    )
     return ConversationHandler.END
 
 # ------------------ EDIT PROFILE ------------------
@@ -329,6 +450,9 @@ async def edit_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def choose_route(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = get_user(update.effective_user.id)
     if not user:
+    if user['role'] == 'driver' and not has_active_subscription(update.effective_user.id):
+        await update.message.reply_text("Obunangiz tugagan. Yangi obuna tanlang:", reply_markup=subscription_keyboard())
+        return SUBSCRIPTION_STATE  # Yangi state qo'shing
         await update.message.reply_text("Iltimos, avval ro‘yxatdan o‘ting.", reply_markup=role_keyboard())
         return CHOOSE_ROLE
     context.user_data['role'] = user['role']
@@ -364,7 +488,7 @@ async def from_district(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"{region} ichida tumanni tanlang:", reply_markup=districts_keyboard(region))
         return FROM_DISTRICT
     context.user_data['from_district'] = txt
-    await update.message.reply_text("Mahalla yoki aniq manzilni kiriting (ixtiyoriy, o‘tkazib yuborish uchun Enter bosing):", reply_markup=back_keyboard())
+    await update.message.reply_text("Mahalla yoki aniq manzilni kiriting:", reply_markup=back_keyboard())
     return FROM_AREA
 
 async def from_area(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -400,7 +524,7 @@ async def to_district(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data['to_district'] = txt
     role = context.user_data.get('role')
     if role == "driver":
-        await update.message.reply_text("Narxni kiriting (so‘mda, ixtiyoriy, o‘tkazib yuborish uchun Enter bosing):", reply_markup=back_keyboard())
+        await update.message.reply_text("Narxni kiriting (so‘mda, ixtiyoriy):", reply_markup=back_keyboard())
         return ENTER_PRICE
     else:
         await update.message.reply_text("Yo‘lovchilar sonini yoki pochta jo‘natishni tanlang:", reply_markup=seats_keyboard())
@@ -577,6 +701,52 @@ async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
             except Exception as e:
                 print(f"Xato yuborishda (haydovchi {match_id}): {e}")
 
+# ------------------ SUBSCRIPTION HANDLERS ------------------
+async def handle_subscription(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Obuna turini tanlash."""
+    txt = update.message.text
+    if txt == BTN_BACK:
+        await update.message.reply_text("Asosiy menyu:", reply_markup=main_menu_driver())
+        return ConversationHandler.END
+    durations = {
+        "1 kunlik (3000 so'm)": (1, 3000),
+        "10 kunlik (20000 so'm)": (10, 20000),
+        "1 oylik (40000 so'm)": (30, 40000),
+        "6 oylik (180000 so'm)": (180, 180000),
+        "1 yillik (320000 so'm)": (365, 320000)
+    }
+    if txt not in durations:
+        await update.message.reply_text("To‘g‘ri obuna turini tanlang:", reply_markup=subscription_keyboard())
+        return SUBSCRIPTION_STATE
+    context.user_data['subscription_type'] = txt
+    context.user_data['subscription_days'] = durations[txt][0]
+    context.user_data['subscription_amount'] = durations[txt][1]
+    await update.message.reply_text("To‘lov usulini tanlang:", reply_markup=payment_method_keyboard())
+    return PAYMENT_METHOD_STATE
+
+async def handle_payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """To'lov usulini tanlash va URL generatsiya qilish."""
+    txt = update.message.text
+    if txt == BTN_BACK:
+        await update.message.reply_text("Obuna turini tanlang:", reply_markup=subscription_keyboard())
+        return SUBSCRIPTION_STATE
+    if txt not in ["Click orqali to'lov", "Payme orqali to'lov"]:
+        await update.message.reply_text("To‘g‘ri to‘lov usulini tanlang:", reply_markup=payment_method_keyboard())
+        return PAYMENT_METHOD_STATE
+    method = "click" if txt == "Click orqali to'lov" else "payme"
+    subscription_type = context.user_data.get('subscription_type')
+    amount = context.user_data.get('subscription_amount')
+    if not subscription_type or not amount:
+        await update.message.reply_text("Xatolik: Obuna turi tanlanmagan. Qaytadan boshlang.", reply_markup=subscription_keyboard())
+        return SUBSCRIPTION_STATE
+    payment_url = generate_payment_url_click(update.effective_user.id, amount, subscription_type) if method == "click" else generate_payment_url_payme(update.effective_user.id, amount, subscription_type)
+    await update.message.reply_text(
+        f"{subscription_type} obuna uchun to‘lov: {amount} so‘m.\n"
+        f"To‘lov linki: {payment_url}",
+        reply_markup=main_menu_driver()
+    )
+    return ConversationHandler.END
+
 # ------------------ AFTER ROUTE MENU ------------------
 async def after_route_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
@@ -607,15 +777,18 @@ async def after_route_router(update: Update, context: ContextTypes.DEFAULT_TYPE)
             return ConversationHandler.END
     else:
         if txt == BTN_SEE_DRIVERS:
-            return await see_drivers(update, context)
-        elif txt == BTN_SEND_GEO:
-            await update.message.reply_text("Geolokatsiyangizni yuboring:", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("Geolokatsiya yuborish", request_location=True)]], resize_keyboard=True))
-            return AFTER_ROUTE_MENU
-        elif txt == BTN_GO:
-            delete_trip(user_id)
-            await update.message.reply_text("Oq yo‘l! Sizga yordam berganimizdan xursandmiz", reply_markup=main_menu_passenger())
-            return ConversationHandler.END
-    await update.message.reply_text("Iltimos, quyidagi variantlardan birini tanlang:", reply_markup=post_route_menu_driver() if role == "driver" else post_route_menu_passenger())
+    trip = get_user_trip(user_id)
+    if not trip:
+        await update.message.reply_text("Yo‘nalish ma'lumotlari topilmadi.", reply_markup=post_route_menu_passenger())
+        return AFTER_ROUTE_MENU
+    matches = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
+    if not matches:
+        await update.message.reply_text("Mos haydovchilar topilmadi.", reply_markup=post_route_menu_passenger())
+        return AFTER_ROUTE_MENU
+    for m in matches:
+        # m allaqachon full user dict, trip qo'shilgan
+        await update.message.reply_text(format_match_info(m, m['trip'], is_driver=True))
+    await update.message.reply_text("Quyidagi tugmalardan foydalaning", reply_markup=post_route_menu_passenger())
     return AFTER_ROUTE_MENU
 
 # ------------------ SEE PASSENGERS / DRIVERS ------------------
@@ -1030,6 +1203,111 @@ async def delete_user_input(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await update.message.reply_text(f"Foydalanuvchi ID {user_id} topilmadi yoki o'chirishda xatolik yuz berdi!")
     return ADMIN_MENU  
 
+# ------------------ ADMIN HANDLERS ------------------
+async def admin_advert(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Reklama joylash uchun matn yoki rasm so'rash."""
+    user_id = update.effective_user.id
+    if user_id not in ADMIN_IDS:
+        await update.message.reply_text("Sizda admin huquqlari yo‘q!")
+        return ConversationHandler.END
+    await update.message.reply_text(
+        "Reklama matnini kiriting (rasm yuborish mumkin, Markdown qo'llab-quvvatlanadi):",
+        reply_markup=back_keyboard()
+    )
+    return ADVERT_MESSAGE
+
+async def handle_advert_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Reklama xabarini barcha foydalanuvchilarga yuborish."""
+    txt = update.message.text if update.message.text else ""
+    photo = update.message.photo[-1].file_id if update.message.photo else None
+    if txt == BTN_BACK:
+        await update.message.reply_text("Admin menyusi:", reply_markup=admin_menu_keyboard())
+        return ADMIN_MENU
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Batafsil", url="https://t.me/your_channel_or_link")]
+    ])
+    user_ids = get_all_users_chat_ids()
+    success = 0
+    for uid in user_ids:
+        try:
+            if photo:
+                await context.bot.send_photo(
+                    chat_id=uid,
+                    photo=photo,
+                    caption=txt,
+                    parse_mode="MarkdownV2",
+                    reply_markup=keyboard
+                )
+            else:
+                await context.bot.send_message(
+                    chat_id=uid,
+                    text=txt,
+                    parse_mode="MarkdownV2",
+                    reply_markup=keyboard
+                )
+            success += 1
+        except Exception as e:
+            logger.error(f"Reklama yuborishda xato (user {uid}): {e}")
+    await update.message.reply_text(
+        f"Reklama {success} ta foydalanuvchiga yuborildi.",
+        reply_markup=admin_menu_keyboard()
+    )
+    return ADMIN_MENU
+
+# ------------------ FLASK WEBHOOK ------------------
+@flask_app.route("/payment_callback_click", methods=["POST"])
+def payment_callback_click():
+    """Click to'lov tasdiqlash webhook."""
+    data = request.get_json()
+    if not data or data.get('status') != 'success':
+        logger.warning("Click to‘lov tasdiqlanmadi")
+        return jsonify({"status": "error"}), 400
+    transaction_param = data.get('transaction_param')
+    parts = transaction_param.split('_')
+    user_id = int(parts[1])
+    duration_str = '_'.join(parts[2:])
+    durations = {
+        "1_kunlik_(3000_so'm)": 1,
+        "10_kunlik_(20000_so'm)": 10,
+        "1_oylik_(40000_so'm)": 30,
+        "6_oylik_(180000_so'm)": 180,
+        "1_yillik_(320000_so'm)": 365
+    }
+    days = durations.get(duration_str, 0)
+    if days:
+        update_subscription(user_id, days)
+        logger.info(f"Click to‘lov tasdiqlandi: user_id={user_id}, days={days}")
+        return jsonify({"status": "ok"}), 200
+    logger.warning(f"Noto‘g‘ri obuna turi: {duration_str}")
+    return jsonify({"status": "error"}), 400
+
+@flask_app.route("/payment_callback_payme", methods=["POST"])
+def payment_callback_payme():
+    """Payme to'lov tasdiqlash webhook."""
+    data = request.get_json()
+    if not data or data.get("method") != "CheckTransaction":
+        logger.error("Noto‘g‘ri Payme webhook so‘rovi")
+        return jsonify({"error": "Invalid request"}), 400
+    if data["result"].get("state") == 2:
+        order_id = data["params"].get("account", {}).get("order_id")
+        parts = order_id.split('_')
+        user_id = int(parts[1])
+        duration_str = '_'.join(parts[2:])
+        durations = {
+            "1_kunlik_(3000_so'm)": 1,
+            "10_kunlik_(20000_so'm)": 10,
+            "1_oylik_(40000_so'm)": 30,
+            "6_oylik_(180000_so'm)": 180,
+            "1_yillik_(320000_so'm)": 365
+        }
+        days = durations.get(duration_str, 0)
+        if days:
+            update_subscription(user_id, days)
+            logger.info(f"Payme to‘lov tasdiqlandi: user_id={user_id}, days={days}")
+            return jsonify({"result": {"state": 2}}), 200
+    logger.warning("Payme to‘lov tasdiqlanmadi")
+    return jsonify({"error": "Transaction not successful"}), 400
+
 async def check_expired_trips():
     from database import delete_expired_trips
     deleted_count = delete_expired_trips()
@@ -1068,6 +1346,7 @@ route_conv = ConversationHandler(
             REGISTER_CAR_MODEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_car_model)],
             REGISTER_CAR_COLOR: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_car_color)],
             REGISTER_CAR_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_car_number)],
+            SUBSCRIPTION_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_subscription)],
             FROM_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_region)],
             FROM_DISTRICT: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_district)],
             FROM_AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_area)],
@@ -1089,14 +1368,18 @@ route_conv = ConversationHandler(
                 MessageHandler(filters.Regex(f"^{SEND_TO_ALL_GROUPS}$"), send_to_all_groups),
                 MessageHandler(filters.Regex(f"^{SEND_TO_DRIVERS}$"), send_to_drivers),
                 MessageHandler(filters.Regex(f"^{SEND_TO_PASSENGERS}$"), send_to_passengers),
+                MessageHandler(filters.Regex(f"^{BTN_ADMIN_ADVERT}$"), admin_advert),
                 MessageHandler(filters.Regex(f"^{BTN_BACK}$"), start),
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
             ],
             "ADMIN_REPLY": [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
+            ADVERT_MESSAGE: [MessageHandler(filters.TEXT | filters.PHOTO, handle_advert_message)],
             "SEND_TO_ALL_GROUPS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_all_groups)],
             "SEND_TO_DRIVERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_drivers)],
             "SEND_TO_PASSENGERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_passengers)],
             "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
+            SUBSCRIPTION_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_subscription)],
+            PAYMENT_METHOD_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_payment_method)],
         },
         fallbacks=[
             MessageHandler(filters.Regex(f"^{BTN_BACK}$"), after_route_router),
@@ -1123,19 +1406,16 @@ start_conv = ConversationHandler(
     )
 
 async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Geolokatsiya so'rash."""
     user = get_user(update.effective_user.id)
     if not user or user.get('role') != 'passenger':
         await update.message.reply_text("Siz yo‘lovchi emassiz!")
         return ConversationHandler.END
-    from_region = context.user_data.get('from_region')
-    from_district = context.user_data.get('from_district')
-    to_region = context.user_data.get('to_region')
-    to_district = context.user_data.get('to_district')
-    if not all([from_region, from_district, to_region, to_district]):
+    trip = get_user_trip(update.effective_user.id)
+    if not trip:
         await update.message.reply_text("Iltimos, avval yo‘nalishni belgilang!")
         return ConversationHandler.END
-    from database import get_matching_drivers
-    drivers = get_matching_drivers(from_region, from_district, to_region, to_district)
+    drivers = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
     if not drivers:
         await update.message.reply_text("Bu yo‘nalishda haydovchi topilmadi!")
         return ConversationHandler.END
@@ -1146,6 +1426,7 @@ async def request_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return "SELECT_DRIVER"
 
 async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Haydovchini tanlash."""
     selected_name = update.message.text
     drivers = context.user_data.get('drivers', [])
     driver = next((d for d in drivers if d.get('full_name') == selected_name), None)
@@ -1159,13 +1440,18 @@ async def select_driver(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     return "LOCATION_STATE"
 
 async def handle_location(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Geolokatsiyani qayta ishlash."""
     if update.message.location:
         latitude = update.message.location.latitude
         longitude = update.message.location.longitude
         driver = context.user_data.get('selected_driver')
         if driver and 'user_id' in driver:
-            await context.bot.send_message(chat_id=driver['user_id'], text=f"Yo‘lovchi geolokatsiya: {latitude}, {longitude}")
-        await update.message.reply_text("Geolokatsiya tanlangan haydovchiga yuborildi!", reply_markup=main_menu_keyboard())
+            await context.bot.send_message(
+                chat_id=driver['user_id'],
+                text=f"Yo‘lovchi geolokatsiyasi: latitude={latitude}, longitude={longitude}. Xarita: https://maps.google.com/?q={latitude},{longitude}"
+            )
+            logger.info(f"Geolokatsiya yuborildi: driver_id={driver['user_id']}")
+        await update.message.reply_text("Geolokatsiya tanlangan haydovchiga yuborildi!", reply_markup=main_menu_passenger())
     return ConversationHandler.END
 
 location_conv = ConversationHandler(
@@ -1197,6 +1483,9 @@ def main():
     app.add_handler(CommandHandler("send_all", send_to_all_groups))
     app.add_handler(CommandHandler("send_drivers", send_to_drivers))
     app.add_handler(CommandHandler("send_passengers", send_to_passengers))
+    app.add_handler(CommandHandler("payment_callback_click", payment_callback_click))
+    app.add_handler(CommandHandler("payment_callback_payme", payment_callback_payme))
+    
 
     # Webhook ni sozlash
     logger.info("Bot webhook rejimida ishga tushdi...")
