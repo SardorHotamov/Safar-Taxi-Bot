@@ -7,7 +7,6 @@ import requests
 import base64
 import json
 import logging
-from typing import str
 
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
