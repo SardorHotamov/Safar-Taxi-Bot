@@ -777,18 +777,15 @@ async def after_route_router(update: Update, context: ContextTypes.DEFAULT_TYPE)
             return ConversationHandler.END
     else:
         if txt == BTN_SEE_DRIVERS:
-    trip = get_user_trip(user_id)
-    if not trip:
-        await update.message.reply_text("Yo‘nalish ma'lumotlari topilmadi.", reply_markup=post_route_menu_passenger())
-        return AFTER_ROUTE_MENU
-    matches = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
-    if not matches:
-        await update.message.reply_text("Mos haydovchilar topilmadi.", reply_markup=post_route_menu_passenger())
-        return AFTER_ROUTE_MENU
-    for m in matches:
-        # m allaqachon full user dict, trip qo'shilgan
-        await update.message.reply_text(format_match_info(m, m['trip'], is_driver=True))
-    await update.message.reply_text("Quyidagi tugmalardan foydalaning", reply_markup=post_route_menu_passenger())
+            return await see_drivers(update, context)
+        elif txt == BTN_SEND_GEO:
+            await update.message.reply_text("Geolokatsiyangizni yuboring:", reply_markup=ReplyKeyboardMarkup([[KeyboardButton("Geolokatsiya yuborish", request_location=True)]], resize_keyboard=True))
+            return AFTER_ROUTE_MENU
+        elif txt == BTN_GO:
+            delete_trip(user_id)
+            await update.message.reply_text("Oq yo‘l! Sizga yordam berganimizdan xursandmiz", reply_markup=main_menu_passenger())
+            return ConversationHandler.END
+    await update.message.reply_text("Iltimos, quyidagi variantlardan birini tanlang:", reply_markup=post_route_menu_driver() if role == "driver" else post_route_menu_passenger())
     return AFTER_ROUTE_MENU
 
 # ------------------ SEE PASSENGERS / DRIVERS ------------------
