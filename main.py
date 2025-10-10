@@ -7,6 +7,7 @@ import requests
 import base64
 import json
 import logging
+from flask import Flask
 
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
@@ -20,6 +21,12 @@ from telegram.ext import (
 
 # Flask app webhook uchun
 flask_app = Flask(__name__)
+
+@flask_app.route('/webhook', methods=['POST'])
+async def webhook():
+    update = Update.de_json(request.get_json(), bot)
+    await dispatcher.process_update(update)
+    return 'OK'
 
 # ------------------ DATABASE IMPORTS ------------------
 from database import (
@@ -1470,7 +1477,14 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
     logger.info("Application obyekti yaratildi")
 
-    # Handler larni qo'shish
+    
+    """Ilovani ishga tushirish."""
+    global bot, dispatcher
+    app = Application.builder().token(TOKEN).build()
+    bot = app.bot
+    dispatcher = app
+
+    # Conversation handler
     app.add_handler(route_conv)
     app.add_handler(start_conv)
     app.add_handler(location_conv)
@@ -1481,16 +1495,9 @@ def main():
     app.add_handler(CommandHandler("send_passengers", send_to_passengers))
     app.add_handler(CommandHandler("payment_callback_click", payment_callback_click))
     app.add_handler(CommandHandler("payment_callback_payme", payment_callback_payme))
-    
 
-    # Webhook ni sozlash
-    logger.info("Bot webhook rejimida ishga tushdi...")
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path="webhook",
-        webhook_url=WEBHOOK_URL + "/webhook"
-    )
+    # Log handlers
+    app.add_error_handler(error_handler)
 
-if __name__ == "__main__":
-    main()
+    # Webhook va polling
+    flask_app.run(host='0.0.0.0', port=8080)
