@@ -436,7 +436,7 @@ async def register_car_number(update: Update, context: ContextTypes.DEFAULT_TYPE
     init_free_trial(update.effective_user.id)  # 5 kunlik bepul trial
     await update.message.reply_text(
         "Tabriklaymiz! Siz haydovchi sifatida muvaffaqiyatli ro‘yxatdan o‘tdingiz! "
-        #"Dastlabki 5 kun bepul obuna faollashtirildi. Endi yo‘nalish tanlashingiz mumkin.",
+        "Dastlabki 5 kun bepul obuna faollashtirildi. Endi yo‘nalish tanlashingiz mumkin.",
         reply_markup=main_menu_driver()
     )
     return ConversationHandler.END
