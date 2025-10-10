@@ -447,17 +447,17 @@ async def edit_profile(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return CHOOSE_ROLE
 
 # ------------------ CHOOSE ROUTE ------------------
-async def choose_route(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def choose_route(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = get_user(update.effective_user.id)
     if not user:
-    if user['role'] == 'driver' and not has_active_subscription(update.effective_user.id):
-        await update.message.reply_text("Obunangiz tugagan. Yangi obuna tanlang:", reply_markup=subscription_keyboard())
-        return SUBSCRIPTION_STATE  # Yangi state qo'shing
         await update.message.reply_text("Iltimos, avval ro‘yxatdan o‘ting.", reply_markup=role_keyboard())
         return CHOOSE_ROLE
+    if user['role'] == 'driver' and not has_active_subscription(update.effective_user.id):
+        await update.message.reply_text("Obunangiz tugagan. Yangi obuna tanlang:", reply_markup=subscription_keyboard())
+        return SUBSCRIPTION_STATE
     context.user_data['role'] = user['role']
     await update.message.reply_text("Qayerdan ketasiz? Viloyatni tanlang:", reply_markup=regions_keyboard())
-    return FROM_REGION
+    return FROM_REGION    
 
 async def from_region(update: Update, context: ContextTypes.DEFAULT_TYPE):
     txt = update.message.text
