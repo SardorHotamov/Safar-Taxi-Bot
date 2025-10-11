@@ -147,7 +147,7 @@ SEATS_BUTTONS = ["1", "2", "3", "4", "5", "6"]
     #SUBSCRIPTION_STATE,  # Yangi state
     #PAYMENT_METHOD_STATE,
     ADVERT_MESSAGE,
-) = range(24)
+) = range(22)
 
 # ------------------ HELPERS: KEYBOARDS ------------------
 from keyboards import (
