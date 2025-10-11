@@ -44,8 +44,8 @@ def save_user(
         "car_model": car_model,
         "car_color": car_color,
         "car_number": car_number,
-        "subscription_start_date": None,
-        "subscription_end_date": None
+#        "subscription_start_date": None,
+#        "subscription_end_date": None
     }
     db.users.replace_one({"user_id": user_id}, user_data, upsert=True)
     logger.info(f"Foydalanuvchi saqlandi: user_id={user_id}")
@@ -213,29 +213,29 @@ def get_all_users_chat_ids() -> List[int]:
     """Barcha foydalanuvchilarning user_id larini olish."""
     return [user['user_id'] for user in db.users.find()]
 
-def has_active_subscription(user_id: int) -> bool:
-    """Foydalanuvchining faol obunasi borligini tekshirish."""
-    user = db.users.find_one({"user_id": user_id})
-    if not user or user.get('role') != 'driver':
-        return False
-    end_date = user.get('subscription_end_date')
-    if end_date and end_date > datetime.now():
-        return True
-    return False
+#def has_active_subscription(user_id: int) -> bool:
+#    """Foydalanuvchining faol obunasi borligini tekshirish."""
+#    user = db.users.find_one({"user_id": user_id})
+#    if not user or user.get('role') != 'driver':
+#        return False
+#    end_date = user.get('subscription_end_date')
+#    if end_date and end_date > datetime.now():
+#        return True
+#    return False
 
-def init_free_trial(user_id: int) -> None:
-    """Haydovchi uchun 5 kunlik bepul sinov muddatini boshlash."""
-    db.users.update_one({"user_id": user_id}, {"$set": {
-        "subscription_start_date": datetime.now(),
-        "subscription_end_date": datetime.now() + timedelta(days=5)
-    }})
-    logger.info(f"Bepul sinov boshlandi: user_id={user_id}")
+#def init_free_trial(user_id: int) -> None:
+#    """Haydovchi uchun 5 kunlik bepul sinov muddatini boshlash."""
+#    db.users.update_one({"user_id": user_id}, {"$set": {
+#        "subscription_start_date": datetime.now(),
+#        "subscription_end_date": datetime.now() + timedelta(days=5)
+#    }})
+#    logger.info(f"Bepul sinov boshlandi: user_id={user_id}")
 
-def update_subscription(user_id: int, duration_days: int) -> None:
-    """Obuna muddatini yangilash."""
-    end_date = datetime.now() + timedelta(days=duration_days)
-    db.users.update_one({"user_id": user_id}, {"$set": {"subscription_end_date": end_date}})
-    logger.info(f"Obuna yangilandi: user_id={user_id}, end_date={end_date}")
+#def update_subscription(user_id: int, duration_days: int) -> None:
+#    """Obuna muddatini yangilash."""
+#    end_date = datetime.now() + timedelta(days=duration_days)
+#    db.users.update_one({"user_id": user_id}, {"$set": {"subscription_end_date": end_date}})
+#    logger.info(f"Obuna yangilandi: user_id={user_id}, end_date={end_date}")
 
 def delete_expired_trips() -> int:
     """Muddat o'tgan sayohatlarni o'chirish."""

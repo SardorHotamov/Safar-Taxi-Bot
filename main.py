@@ -20,13 +20,13 @@ from telegram.ext import (
 )
 
 # Flask app webhook uchun
-flask_app = Flask(__name__)
+#flask_app = Flask(__name__)
 
-@flask_app.route('/webhook', methods=['POST'])
-async def webhook():
-    update = Update.de_json(request.get_json(), bot)
-    await dispatcher.process_update(update)
-    return 'OK'
+#@flask_app.route('/webhook', methods=['POST'])
+#async def webhook():
+#    update = Update.de_json(request.get_json(), bot)
+ #   await dispatcher.process_update(update)
+ #   return 'OK'
 
 # ------------------ DATABASE IMPORTS ------------------
 from database import (
@@ -65,17 +65,17 @@ from database import get_all_users, get_all_drivers, get_all_passengers
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 10000))
-CLICK_MERCHANT_ID = os.getenv("CLICK_MERCHANT_ID")
-CLICK_SECRET_KEY = os.getenv("CLICK_SECRET_KEY")
-PAYME_MERCHANT_ID = os.getenv("PAYME_MERCHANT_ID")
-PAYME_SECRET_KEY = os.getenv("PAYME_SECRET_KEY")
+#CLICK_MERCHANT_ID = os.getenv("CLICK_MERCHANT_ID")
+#CLICK_SECRET_KEY = os.getenv("CLICK_SECRET_KEY")
+#PAYME_MERCHANT_ID = os.getenv("PAYME_MERCHANT_ID")
+#PAYME_SECRET_KEY = os.getenv("PAYME_SECRET_KEY")
 
 if not BOT_TOKEN or not WEBHOOK_URL:
     logger.error("BOT_TOKEN yoki WEBHOOK_URL noto‘g‘ri belgilangan!")
     raise ValueError("BOT_TOKEN yoki WEBHOOK_URL noto‘g‘ri belgilangan!")
-if not CLICK_MERCHANT_ID or not CLICK_SECRET_KEY or not PAYME_MERCHANT_ID or not PAYME_SECRET_KEY:
-    logger.error("To‘lov tizimlari uchun env o‘zgaruvchilari topilmadi!")
-    raise ValueError("CLICK yoki PAYME sozlamalari noto‘g‘ri!")
+#if not CLICK_MERCHANT_ID or not CLICK_SECRET_KEY or not PAYME_MERCHANT_ID or not PAYME_SECRET_KEY:
+   #logger.error("To‘lov tizimlari uchun env o‘zgaruvchilari topilmadi!")
+    #raise ValueError("CLICK yoki PAYME sozlamalari noto‘g‘ri!")
 
 ADMIN_IDS = set()
 env_admins = os.getenv("ADMINS", "")
@@ -144,8 +144,8 @@ SEATS_BUTTONS = ["1", "2", "3", "4", "5", "6"]
     CHANGE_SEATS_STATE,
     ADMIN_MENU,
     ADMIN_REPLY,
-    SUBSCRIPTION_STATE,  # Yangi state
-    PAYMENT_METHOD_STATE,
+    #SUBSCRIPTION_STATE,  # Yangi state
+    #PAYMENT_METHOD_STATE,
     ADVERT_MESSAGE,
 ) = range(24)
 
@@ -177,20 +177,20 @@ def main_menu_keyboard():
 def back_keyboard():
     return ReplyKeyboardMarkup([[KeyboardButton(BTN_BACK)]], resize_keyboard=True)
 
-def subscription_keyboard() -> ReplyKeyboardMarkup:
-    """Obuna turlari klaviaturasini yaratish."""
-    return ReplyKeyboardMarkup([
-        ["1 kunlik (3000 so'm)", "10 kunlik (20000 so'm)"],
-        ["1 oylik (40000 so'm)", "6 oylik (180000 so'm)"],
-        ["1 yillik (320000 so'm)", BTN_BACK]
-    ], resize_keyboard=True)
+#def subscription_keyboard() -> ReplyKeyboardMarkup:
+    #"""Obuna turlari klaviaturasini yaratish."""
+    #return ReplyKeyboardMarkup([
+        #["1 kunlik (3000 so'm)", "10 kunlik (20000 so'm)"],
+       # ["1 oylik (40000 so'm)", "6 oylik (180000 so'm)"],
+        #["1 yillik (320000 so'm)", BTN_BACK]
+    #], resize_keyboard=True)
 
-def payment_method_keyboard() -> ReplyKeyboardMarkup:
-    """To‘lov usullari klaviaturasini yaratish."""
-    return ReplyKeyboardMarkup([
-        ["Click orqali to'lov", "Payme orqali to'lov"],
-        [BTN_BACK]
-    ], resize_keyboard=True)
+#def payment_method_keyboard() -> ReplyKeyboardMarkup:
+    #"""To‘lov usullari klaviaturasini yaratish."""
+    #return ReplyKeyboardMarkup([
+       # ["Click orqali to'lov", "Payme orqali to'lov"],
+       # [BTN_BACK]
+    #], resize_keyboard=True)
 
 def admin_menu_keyboard() -> ReplyKeyboardMarkup:
     """Admin menyu klaviaturasini yaratish."""
@@ -265,69 +265,69 @@ def format_match_info(user, trip, is_driver):
                 f"🪑 {seats_str}")
 
 # ------------------ PAYMENT FUNCTIONS ------------------
-def generate_payment_url_click(user_id: int, amount: int, description: str) -> str:
-    """Click orqali to'lov URL generatsiya qilish."""
-    try:
-        params = {
-            "merchant_id": CLICK_MERCHANT_ID,
-            "amount": amount,
-            "transaction_param": f"user_{user_id}_{description.replace(' ', '_')}",
-            "return_url": WEBHOOK_URL + "/payment_success",
-            "callback_url": WEBHOOK_URL + "/payment_callback_click"
-        }
-        response = requests.post("https://api.click.uz/v2/merchant/invoice/create", json=params, headers={"Authorization": f"Bearer {CLICK_SECRET_KEY}"})
-        if response.status_code == 200:
-            return response.json().get('invoice_url', 'Xato: URL topilmadi')
-        logger.error(f"Click API xatosi: {response.status_code} - {response.text}")
-        return f"To'lov URL yaratishda xato: HTTP {response.status_code}"
-    except Exception as e:
-        logger.error(f"Click to'lov URL yaratishda xato: {e}")
-        return f"To'lov URL yaratishda xato: {str(e)}"
+#def generate_payment_url_click(user_id: int, amount: int, description: str) -> str:
+ #   """Click orqali to'lov URL generatsiya qilish."""
+  #  try:
+   #     params = {
+    #        "merchant_id": CLICK_MERCHANT_ID,
+     #       "amount": amount,
+      #      "transaction_param": f"user_{user_id}_{description.replace(' ', '_')}",
+       #     "return_url": WEBHOOK_URL + "/payment_success",
+        #    "callback_url": WEBHOOK_URL + "/payment_callback_click"
+        #}
+        #response = requests.post("https://api.click.uz/v2/merchant/invoice/create", json=params, headers={"Authorization": f"Bearer {CLICK_SECRET_KEY}"})
+        #if response.status_code == 200:
+        #    return response.json().get('invoice_url', 'Xato: URL topilmadi')
+        #logger.error(f"Click API xatosi: {response.status_code} - {response.text}")
+        #return f"To'lov URL yaratishda xato: HTTP {response.status_code}"
+    #except Exception as e:
+     #   logger.error(f"Click to'lov URL yaratishda xato: {e}")
+      #  return f"To'lov URL yaratishda xato: {str(e)}"
 
-def generate_payment_url_payme(user_id: int, amount: int, description: str) -> str:
-    """Payme orqali to'lov URL generatsiya qilish."""
-    try:
-        merchant_id = PAYME_MERCHANT_ID
-        secret_key = PAYME_SECRET_KEY
-        callback_url = WEBHOOK_URL + "/payment_callback_payme"
-        amount_in_tiyin = amount * 100
-        order_id = f"user_{user_id}_{description.replace(' ', '_')}"
-        payload = {
-            "method": "CreateTransaction",
-            "params": {
-                "account": {"order_id": order_id},
-                "amount": amount_in_tiyin,
-                "currency": "UZS",
-                "detail": {
-                    "title": description,
-                    "description": f"Obuna: {description} for user {user_id}"
-                },
-                "callback_url": callback_url
-            }
-        }
-        auth_string = f"{merchant_id}:{secret_key}"
-        auth_header = base64.b64encode(auth_string.encode()).decode()
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Basic {auth_header}"
-        }
-        response = requests.post(
-            "https://checkout.paycom.uz/api",
-            json=payload,
-            headers=headers
-        )
-        if response.status_code == 200:
-            result = response.json()
-            if result.get("result") and result["result"].get("create_transaction"):
-                transaction_id = result["result"]["create_transaction"]["transaction"]
-                return f"https://payme.uz/checkout/{transaction_id}"
-            logger.error(f"Payme xatosi: {result.get('error')}")
-            return f"To'lov URL yaratishda xato: {result.get('error', 'Noma’lum xato')}"
-        logger.error(f"Payme API xatosi: {response.status_code} - {response.text}")
-        return f"To'lov URL yaratishda xato: HTTP {response.status_code}"
-    except Exception as e:
-        logger.error(f"Payme to'lov URL yaratishda xato: {e}")
-        return f"To'lov URL yaratishda xato: {str(e)}"
+#def generate_payment_url_payme(user_id: int, amount: int, description: str) -> str:
+ #   """Payme orqali to'lov URL generatsiya qilish."""
+  #  try:
+   #     merchant_id = PAYME_MERCHANT_ID
+    #    secret_key = PAYME_SECRET_KEY
+     #   callback_url = WEBHOOK_URL + "/payment_callback_payme"
+      #  amount_in_tiyin = amount * 100
+       # order_id = f"user_{user_id}_{description.replace(' ', '_')}"
+        #payload = {
+         #   "method": "CreateTransaction",
+          #  "params": {
+           #     "account": {"order_id": order_id},
+            #    "amount": amount_in_tiyin,
+             #   "currency": "UZS",
+              #  "detail": {
+               #     "title": description,
+                #    "description": f"Obuna: {description} for user {user_id}"
+                #},
+                #"callback_url": callback_url
+            #}
+        #}
+        #auth_string = f"{merchant_id}:{secret_key}"
+        #auth_header = base64.b64encode(auth_string.encode()).decode()
+        #headers = {
+         #   "Content-Type": "application/json",
+          #  "Authorization": f"Basic {auth_header}"
+        #}
+        #response = requests.post(
+         #   "https://checkout.paycom.uz/api",
+          #  json=payload,
+           # headers=headers
+        #)
+        #if response.status_code == 200:
+        #    result = response.json()
+         #   if result.get("result") and result["result"].get("create_transaction"):
+          #      transaction_id = result["result"]["create_transaction"]["transaction"]
+           #     return f"https://payme.uz/checkout/{transaction_id}"
+            #logger.error(f"Payme xatosi: {result.get('error')}")
+            #return f"To'lov URL yaratishda xato: {result.get('error', 'Noma’lum xato')}"
+        #logger.error(f"Payme API xatosi: {response.status_code} - {response.text}")
+        #return f"To'lov URL yaratishda xato: HTTP {response.status_code}"
+#    except Exception as e:
+#        logger.error(f"Payme to'lov URL yaratishda xato: {e}")
+#        return f"To'lov URL yaratishda xato: {str(e)}"
 
 # ------------------ HANDLERS: START ------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -458,9 +458,9 @@ async def choose_route(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     if not user:
         await update.message.reply_text("Iltimos, avval ro‘yxatdan o‘ting.", reply_markup=role_keyboard())
         return CHOOSE_ROLE
-    if user['role'] == 'driver' and not has_active_subscription(update.effective_user.id):
-        await update.message.reply_text("Obunangiz tugagan. Yangi obuna tanlang:", reply_markup=subscription_keyboard())
-        return SUBSCRIPTION_STATE
+#    if user['role'] == 'driver' and not has_active_subscription(update.effective_user.id):
+#        await update.message.reply_text("Obunangiz tugagan. Yangi obuna tanlang:", reply_markup=subscription_keyboard())
+#        return SUBSCRIPTION_STATE
     context.user_data['role'] = user['role']
     await update.message.reply_text("Qayerdan ketasiz? Viloyatni tanlang:", reply_markup=regions_keyboard())
     return FROM_REGION    
@@ -708,50 +708,50 @@ async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 print(f"Xato yuborishda (haydovchi {match_id}): {e}")
 
 # ------------------ SUBSCRIPTION HANDLERS ------------------
-async def handle_subscription(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Obuna turini tanlash."""
-    txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Asosiy menyu:", reply_markup=main_menu_driver())
-        return ConversationHandler.END
-    durations = {
-        "1 kunlik (3000 so'm)": (1, 3000),
-        "10 kunlik (20000 so'm)": (10, 20000),
-        "1 oylik (40000 so'm)": (30, 40000),
-        "6 oylik (180000 so'm)": (180, 180000),
-        "1 yillik (320000 so'm)": (365, 320000)
-    }
-    if txt not in durations:
-        await update.message.reply_text("To‘g‘ri obuna turini tanlang:", reply_markup=subscription_keyboard())
-        return SUBSCRIPTION_STATE
-    context.user_data['subscription_type'] = txt
-    context.user_data['subscription_days'] = durations[txt][0]
-    context.user_data['subscription_amount'] = durations[txt][1]
-    await update.message.reply_text("To‘lov usulini tanlang:", reply_markup=payment_method_keyboard())
-    return PAYMENT_METHOD_STATE
+#async def handle_subscription(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+#    """Obuna turini tanlash."""
+#    txt = update.message.text
+#    if txt == BTN_BACK:
+#        await update.message.reply_text("Asosiy menyu:", reply_markup=main_menu_driver())
+#        return ConversationHandler.END
+#    durations = {
+#        "1 kunlik (3000 so'm)": (1, 3000),
+#        "10 kunlik (20000 so'm)": (10, 20000),
+#        "1 oylik (40000 so'm)": (30, 40000),
+#        "6 oylik (180000 so'm)": (180, 180000),
+#        "1 yillik (320000 so'm)": (365, 320000)
+#    }
+#    if txt not in durations:
+#        await update.message.reply_text("To‘g‘ri obuna turini tanlang:", reply_markup=subscription_keyboard())
+#        return SUBSCRIPTION_STATE
+#    context.user_data['subscription_type'] = txt
+#    context.user_data['subscription_days'] = durations[txt][0]
+#    context.user_data['subscription_amount'] = durations[txt][1]
+#    await update.message.reply_text("To‘lov usulini tanlang:", reply_markup=payment_method_keyboard())
+#    return PAYMENT_METHOD_STATE
 
-async def handle_payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """To'lov usulini tanlash va URL generatsiya qilish."""
-    txt = update.message.text
-    if txt == BTN_BACK:
-        await update.message.reply_text("Obuna turini tanlang:", reply_markup=subscription_keyboard())
-        return SUBSCRIPTION_STATE
-    if txt not in ["Click orqali to'lov", "Payme orqali to'lov"]:
-        await update.message.reply_text("To‘g‘ri to‘lov usulini tanlang:", reply_markup=payment_method_keyboard())
-        return PAYMENT_METHOD_STATE
-    method = "click" if txt == "Click orqali to'lov" else "payme"
-    subscription_type = context.user_data.get('subscription_type')
-    amount = context.user_data.get('subscription_amount')
-    if not subscription_type or not amount:
-        await update.message.reply_text("Xatolik: Obuna turi tanlanmagan. Qaytadan boshlang.", reply_markup=subscription_keyboard())
-        return SUBSCRIPTION_STATE
-    payment_url = generate_payment_url_click(update.effective_user.id, amount, subscription_type) if method == "click" else generate_payment_url_payme(update.effective_user.id, amount, subscription_type)
-    await update.message.reply_text(
-        f"{subscription_type} obuna uchun to‘lov: {amount} so‘m.\n"
-        f"To‘lov linki: {payment_url}",
-        reply_markup=main_menu_driver()
-    )
-    return ConversationHandler.END
+#async def handle_payment_method(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+#    """To'lov usulini tanlash va URL generatsiya qilish."""
+#    txt = update.message.text
+#    if txt == BTN_BACK:
+#        await update.message.reply_text("Obuna turini tanlang:", reply_markup=subscription_keyboard())
+#        return SUBSCRIPTION_STATE
+#    if txt not in ["Click orqali to'lov", "Payme orqali to'lov"]:
+#        await update.message.reply_text("To‘g‘ri to‘lov usulini tanlang:", reply_markup=payment_method_keyboard())
+#        return PAYMENT_METHOD_STATE
+#    method = "click" if txt == "Click orqali to'lov" else "payme"
+#   subscription_type = context.user_data.get('subscription_type')
+#    amount = context.user_data.get('subscription_amount')
+#    if not subscription_type or not amount:
+#        await update.message.reply_text("Xatolik: Obuna turi tanlanmagan. Qaytadan boshlang.", reply_markup=subscription_keyboard())
+#        return SUBSCRIPTION_STATE
+#    payment_url = generate_payment_url_click(update.effective_user.id, amount, subscription_type) if method == "click" else generate_payment_url_payme(update.effective_user.id, amount, subscription_type)
+#    await update.message.reply_text(
+#        f"{subscription_type} obuna uchun to‘lov: {amount} so‘m.\n"
+#        f"To‘lov linki: {payment_url}",
+#        reply_markup=main_menu_driver()
+#    )
+#    return ConversationHandler.END
 
 # ------------------ AFTER ROUTE MENU ------------------
 async def after_route_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1258,58 +1258,58 @@ async def handle_advert_message(update: Update, context: ContextTypes.DEFAULT_TY
     return ADMIN_MENU
 
 # ------------------ FLASK WEBHOOK ------------------
-@flask_app.route("/payment_callback_click", methods=["POST"])
-def payment_callback_click():
-    """Click to'lov tasdiqlash webhook."""
-    data = request.get_json()
-    if not data or data.get('status') != 'success':
-        logger.warning("Click to‘lov tasdiqlanmadi")
-        return jsonify({"status": "error"}), 400
-    transaction_param = data.get('transaction_param')
-    parts = transaction_param.split('_')
-    user_id = int(parts[1])
-    duration_str = '_'.join(parts[2:])
-    durations = {
-        "1_kunlik_(3000_so'm)": 1,
-        "10_kunlik_(20000_so'm)": 10,
-        "1_oylik_(40000_so'm)": 30,
-        "6_oylik_(180000_so'm)": 180,
-        "1_yillik_(320000_so'm)": 365
-    }
-    days = durations.get(duration_str, 0)
-    if days:
-        update_subscription(user_id, days)
-        logger.info(f"Click to‘lov tasdiqlandi: user_id={user_id}, days={days}")
-        return jsonify({"status": "ok"}), 200
-    logger.warning(f"Noto‘g‘ri obuna turi: {duration_str}")
-    return jsonify({"status": "error"}), 400
+#@flask_app.route("/payment_callback_click", methods=["POST"])
+#def payment_callback_click():
+#    """Click to'lov tasdiqlash webhook."""
+#    data = request.get_json()
+#    if not data or data.get('status') != 'success':
+#        logger.warning("Click to‘lov tasdiqlanmadi")
+#        return jsonify({"status": "error"}), 400
+#    transaction_param = data.get('transaction_param')
+#    parts = transaction_param.split('_')
+#    user_id = int(parts[1])
+#    duration_str = '_'.join(parts[2:])
+#    durations = {
+#        "1_kunlik_(3000_so'm)": 1,
+#        "10_kunlik_(20000_so'm)": 10,
+#        "1_oylik_(40000_so'm)": 30,
+#        "6_oylik_(180000_so'm)": 180,
+#        "1_yillik_(320000_so'm)": 365
+#    }
+#    days = durations.get(duration_str, 0)
+#    if days:
+#        update_subscription(user_id, days)
+#        logger.info(f"Click to‘lov tasdiqlandi: user_id={user_id}, days={days}")
+#        return jsonify({"status": "ok"}), 200
+#    logger.warning(f"Noto‘g‘ri obuna turi: {duration_str}")
+#    return jsonify({"status": "error"}), 400
 
-@flask_app.route("/payment_callback_payme", methods=["POST"])
-def payment_callback_payme():
-    """Payme to'lov tasdiqlash webhook."""
-    data = request.get_json()
-    if not data or data.get("method") != "CheckTransaction":
-        logger.error("Noto‘g‘ri Payme webhook so‘rovi")
-        return jsonify({"error": "Invalid request"}), 400
-    if data["result"].get("state") == 2:
-        order_id = data["params"].get("account", {}).get("order_id")
-        parts = order_id.split('_')
-        user_id = int(parts[1])
-        duration_str = '_'.join(parts[2:])
-        durations = {
-            "1_kunlik_(3000_so'm)": 1,
-            "10_kunlik_(20000_so'm)": 10,
-            "1_oylik_(40000_so'm)": 30,
-            "6_oylik_(180000_so'm)": 180,
-            "1_yillik_(320000_so'm)": 365
-        }
-        days = durations.get(duration_str, 0)
-        if days:
-            update_subscription(user_id, days)
-            logger.info(f"Payme to‘lov tasdiqlandi: user_id={user_id}, days={days}")
-            return jsonify({"result": {"state": 2}}), 200
-    logger.warning("Payme to‘lov tasdiqlanmadi")
-    return jsonify({"error": "Transaction not successful"}), 400
+#@flask_app.route("/payment_callback_payme", methods=["POST"])
+#def payment_callback_payme():
+#    """Payme to'lov tasdiqlash webhook."""
+#    data = request.get_json()
+#    if not data or data.get("method") != "CheckTransaction":
+#        logger.error("Noto‘g‘ri Payme webhook so‘rovi")
+#        return jsonify({"error": "Invalid request"}), 400
+#    if data["result"].get("state") == 2:
+#        order_id = data["params"].get("account", {}).get("order_id")
+#        parts = order_id.split('_')
+#        user_id = int(parts[1])
+#        duration_str = '_'.join(parts[2:])
+#        durations = {
+#            "1_kunlik_(3000_so'm)": 1,
+#            "10_kunlik_(20000_so'm)": 10,
+#            "1_oylik_(40000_so'm)": 30,
+#            "6_oylik_(180000_so'm)": 180,
+#            "1_yillik_(320000_so'm)": 365
+#        }
+#        days = durations.get(duration_str, 0)
+#        if days:
+#            update_subscription(user_id, days)
+#            logger.info(f"Payme to‘lov tasdiqlandi: user_id={user_id}, days={days}")
+#            return jsonify({"result": {"state": 2}}), 200
+#    logger.warning("Payme to‘lov tasdiqlanmadi")
+#    return jsonify({"error": "Transaction not successful"}), 400#
 
 async def check_expired_trips():
     from database import delete_expired_trips
@@ -1376,13 +1376,13 @@ route_conv = ConversationHandler(
                 MessageHandler(filters.Regex(f"^{BTN_DELETE_USER_PROMPT}$"), delete_user_prompt)
             ],
             "ADMIN_REPLY": [MessageHandler(filters.TEXT & ~filters.COMMAND, admin_reply)],
-            ADVERT_MESSAGE: [MessageHandler(filters.TEXT | filters.PHOTO, handle_advert_message)],
+            "ADVERT_MESSAGE": [MessageHandler(filters.TEXT | filters.PHOTO, handle_advert_message)],
             "SEND_TO_ALL_GROUPS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_all_groups)],
             "SEND_TO_DRIVERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_drivers)],
             "SEND_TO_PASSENGERS": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_send_to_passengers)],
             "DELETE_USER_INPUT": [MessageHandler(filters.TEXT & ~filters.COMMAND, delete_user_input)],
-            SUBSCRIPTION_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_subscription)],
-            PAYMENT_METHOD_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_payment_method)],
+#            "SUBSCRIPTION_STATE": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_subscription)],
+#            "PAYMENT_METHOD_STATE": [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_payment_method)],
         },
         fallbacks=[
             MessageHandler(filters.Regex(f"^{BTN_BACK}$"), after_route_router),

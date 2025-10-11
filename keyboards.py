@@ -90,9 +90,9 @@ def driver_selection_keyboard():
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
 
 # keyboards.py (agar alohida fayl bo'lsa, aks holda main.py ga qo'shing)
-def subscription_keyboard():
-    return ReplyKeyboardMarkup([
-        ["1 kunlik (3000 so'm)", "10 kunlik (20000 so'm)"],
-        ["1 oylik (40000 so'm)", "6 oylik (180000 so'm)"],
-        ["1 yillik (320000 so'm)", BTN_BACK]
-    ], resize_keyboard=True)
+#def subscription_keyboard():
+#    return ReplyKeyboardMarkup([
+#        ["1 kunlik (3000 so'm)", "10 kunlik (20000 so'm)"],
+#        ["1 oylik (40000 so'm)", "6 oylik (180000 so'm)"],
+#        ["1 yillik (320000 so'm)", BTN_BACK]
+#    ], resize_keyboard=True)
