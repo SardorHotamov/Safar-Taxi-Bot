@@ -42,9 +42,9 @@ from database import (
     save_trip,
     update_seats,
     delete_trip,
-    has_active_subscription,
-    init_free_trial,
-    update_subscription,
+#    has_active_subscription,
+#    init_free_trial,
+#    update_subscription,
 )
 
 # Loglashni sozlash
