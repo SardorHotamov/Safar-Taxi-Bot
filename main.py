@@ -1468,6 +1468,40 @@ location_conv = ConversationHandler(
 )
 
 # ------------------ MAIN ------------------
+#def main():
+    # Ma'lumotlar bazasini ishga tushirish
+#    init_db()
+#    logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
+
+    # Ilova obyekti
+#    app = Application.builder().token(BOT_TOKEN).build()
+#    logger.info("Application obyekti yaratildi")
+
+    
+#    """Ilovani ishga tushirish."""
+#    global bot, dispatcher
+#    app = Application.builder().token(TOKEN).build()
+#    bot = app.bot
+#    dispatcher = app
+
+    # Conversation handler
+#    app.add_handler(route_conv)
+#    app.add_handler(start_conv)
+#    app.add_handler(location_conv)
+#    app.add_handler(MessageHandler(filters.LOCATION, handle_location))
+#    app.add_handler(CommandHandler("reply", reply_command))
+#    app.add_handler(CommandHandler("send_all", send_to_all_groups))
+#    app.add_handler(CommandHandler("send_drivers", send_to_drivers))
+#    app.add_handler(CommandHandler("send_passengers", send_to_passengers))
+#    app.add_handler(CommandHandler("payment_callback_click", payment_callback_click))
+#    app.add_handler(CommandHandler("payment_callback_payme", payment_callback_payme))
+
+    # Log handlers
+#    app.add_error_handler(error_handler)
+
+    # Webhook va polling
+#    flask_app.run(host='0.0.0.0', port=8080)
+
 def main():
     # Ma'lumotlar bazasini ishga tushirish
     init_db()
@@ -1477,14 +1511,7 @@ def main():
     app = Application.builder().token(BOT_TOKEN).build()
     logger.info("Application obyekti yaratildi")
 
-    
-    """Ilovani ishga tushirish."""
-    global bot, dispatcher
-    app = Application.builder().token(TOKEN).build()
-    bot = app.bot
-    dispatcher = app
-
-    # Conversation handler
+    # Handler larni qo'shish
     app.add_handler(route_conv)
     app.add_handler(start_conv)
     app.add_handler(location_conv)
@@ -1493,11 +1520,15 @@ def main():
     app.add_handler(CommandHandler("send_all", send_to_all_groups))
     app.add_handler(CommandHandler("send_drivers", send_to_drivers))
     app.add_handler(CommandHandler("send_passengers", send_to_passengers))
-    app.add_handler(CommandHandler("payment_callback_click", payment_callback_click))
-    app.add_handler(CommandHandler("payment_callback_payme", payment_callback_payme))
 
-    # Log handlers
-    app.add_error_handler(error_handler)
+    # Webhook ni sozlash
+    logger.info("Bot webhook rejimida ishga tushdi...")
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path="webhook",
+        webhook_url=WEBHOOK_URL + "/webhook"
+    )
 
-    # Webhook va polling
-    flask_app.run(host='0.0.0.0', port=8080)
+if __name__ == "__main__":
+    main()
