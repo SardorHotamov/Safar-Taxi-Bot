@@ -1349,7 +1349,7 @@ route_conv = ConversationHandler(
             REGISTER_CAR_MODEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_car_model)],
             REGISTER_CAR_COLOR: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_car_color)],
             REGISTER_CAR_NUMBER: [MessageHandler(filters.TEXT & ~filters.COMMAND, register_car_number)],
-            SUBSCRIPTION_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_subscription)],
+#           SUBSCRIPTION_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_subscription)],
             FROM_REGION: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_region)],
             FROM_DISTRICT: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_district)],
             FROM_AREA: [MessageHandler(filters.TEXT & ~filters.COMMAND, from_area)],
