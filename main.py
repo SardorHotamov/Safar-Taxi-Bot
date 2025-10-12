@@ -1317,7 +1317,7 @@ async def check_expired_trips():
     if deleted_count > 0:
         print(f"{deleted_count} ta eskirgan trip o‘chirildi.")
 
-def run_schedule():
+async def run_schedule():
     schedule.every(24).hours.do(lambda: asyncio.run(check_expired_trips()))
     while True:
         schedule.run_pending()
@@ -1467,6 +1467,12 @@ location_conv = ConversationHandler(
     per_chat=True,
 )
 
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print(f"Xatolik yuz berdi: {context.error}")
+    # Xatolik haqida xabar yuborish
+    if update and hasattr(update, 'message'):
+        await update.message.reply_text("Xatolik yuz berdi, iltimos qayta urinib ko‘ring!")
+
 # ------------------ MAIN ------------------
 #def main():
     # Ma'lumotlar bazasini ishga tushirish
@@ -1520,6 +1526,8 @@ def main():
     app.add_handler(CommandHandler("send_all", send_to_all_groups))
     app.add_handler(CommandHandler("send_drivers", send_to_drivers))
     app.add_handler(CommandHandler("send_passengers", send_to_passengers))
+    app.add_error_handler(error_handler)
+    app.run_polling()
 
     # Webhook ni sozlash
     logger.info("Bot webhook rejimida ishga tushdi...")
