@@ -19,15 +19,6 @@ from telegram.ext import (
     filters,
 )
 
-Flask app webhook uchun
-flask_app = Flask(__name__)
-
-@flask_app.route('/webhook', methods=['POST'])
-async def webhook():
-    update = Update.de_json(request.get_json(), bot)
-    await dispatcher.process_update(update)
-    return 'OK'
-
 # ------------------ DATABASE IMPORTS ------------------
 from database import (
     init_db,
@@ -57,9 +48,23 @@ from regions import regions
 # ------------------ UTILS ------------------
 from utils import is_valid_date, format_date, format_time
 
-from telegram import Update
-from telegram.ext import ContextTypes
-from database import get_all_users, get_all_drivers, get_all_passengers
+#Flask app webhook uchun
+flask_app = Flask(__name__)
+
+#@flask_app.route('/webhook', methods=['POST'])
+#async def webhook():
+#    update = Update.de_json(request.get_json(), bot)
+#    await dispatcher.process_update(update)
+#    return 'OK'
+
+@flask_app.route('/webhook', methods=['POST'])
+async def webhook():
+    global app
+    if not app:
+        return 'Application not initialized', 500
+    update = Update.de_json(request.get_json(), app.bot)
+    await app.process_update(update)
+    return 'OK'
 
 # ------------------ ENV ------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -1504,8 +1509,13 @@ location_conv = ConversationHandler(
 
 def main():
     # Ma'lumotlar bazasini ishga tushirish
-    init_db()
-    logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
+    global app
+    try:
+        init_db()
+        logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
+    except Exception as e:
+        logger.error(f"Ma'lumotlar bazasi xatosi: {e}")
+        raise
 
     # Ilova obyekti
     app = Application.builder().token(BOT_TOKEN).build()
@@ -1522,13 +1532,13 @@ def main():
     app.add_handler(CommandHandler("send_passengers", send_to_passengers))
 
     # Webhook ni sozlash
-    logger.info("Bot webhook rejimida ishga tushdi...")
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path="webhook",
-        webhook_url=WEBHOOK_URL + "/webhook"
-    )
+    port = int(os.getenv("PORT", 10000))
+    webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
+    app.bot.set_webhook(url=webhook_url)
+    logger.info(f"Webhook URL: {webhook_url}")
+
+    # Flask serverini ishga tushirish
+    flask_app.run(host='0.0.0.0', port=port)
 
 if __name__ == "__main__":
     main()
