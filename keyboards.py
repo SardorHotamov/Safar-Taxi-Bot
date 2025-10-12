@@ -78,8 +78,8 @@ def admin_menu_keyboard():
         [KeyboardButton("Foydalanuvchilar soni"), KeyboardButton("Haydovchilar ma'lumotlari")],
         [KeyboardButton("Yo‘lovchilar ma'lumotlari"), KeyboardButton("Barchaga xabar yuborish")],
         [KeyboardButton("Haydovchilarga xabar"), KeyboardButton("Yo‘lovchilarga xabar")],
-        [KeyboardButton("Foydalanuvchini o‘chirish"), KeyboardButton("Xabar yuborish")],
-        [KeyboardButton("Reklama joylash"), KeyboardButton("Orqaga")]
+        [KeyboardButton("Foydalanuvchini o‘chirish"), KeyboardButton("Reklama joylash")],
+        [KeyboardButton("Orqaga")]
     ], resize_keyboard=True)
 
 def driver_selection_keyboard():

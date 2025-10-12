@@ -19,14 +19,14 @@ from telegram.ext import (
     filters,
 )
 
-# Flask app webhook uchun
-#flask_app = Flask(__name__)
+Flask app webhook uchun
+flask_app = Flask(__name__)
 
-#@flask_app.route('/webhook', methods=['POST'])
-#async def webhook():
-#    update = Update.de_json(request.get_json(), bot)
- #   await dispatcher.process_update(update)
- #   return 'OK'
+@flask_app.route('/webhook', methods=['POST'])
+async def webhook():
+    update = Update.de_json(request.get_json(), bot)
+    await dispatcher.process_update(update)
+    return 'OK'
 
 # ------------------ DATABASE IMPORTS ------------------
 from database import (
