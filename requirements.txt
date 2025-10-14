@@ -1,7 +1,10 @@
-Flask 
-gunicorn 
-uvicorn 
-python-telegram-bot[webhooks] 
-pymongo==4.10.0 
-schedule 
-requests 
+Flask
+gunicorn
+uvicorn
+telegram
+python-telegram-bot[webhooks]
+python-dotenv==1.0.1
+pymongo==4.10.0
+schedule
+requests
+python-dotenv
