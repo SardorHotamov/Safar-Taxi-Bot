@@ -73,6 +73,15 @@ def webhook():
     asyncio.run(app.process_update(update))
     return 'OK'
 
+def create_app():
+    global app
+    try:
+        init_db()
+        logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
+    except Exception as e:
+        logger.error(f"Ma'lumotlar bazasi xatosi: {e}")
+        raise
+
 # ------------------ ENV ------------------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
@@ -1538,13 +1547,12 @@ def main():
     app.add_handler(CommandHandler("send_passengers", send_to_passengers))
 
     # Webhook sozlash
-    port = int(os.getenv("PORT", 10000))
     webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
-    # Asinxron metodni sinxron tarzda chaqirish uchun asyncio ishlatamiz
     asyncio.run(app.bot.set_webhook(url=webhook_url))
     logger.info(f"Webhook URL: {webhook_url}")
 
-    # Flask serverini ishga tushirish (Gunicorn tomonidan boshqariladi)
+    return flask_app
 
 if __name__ == "__main__":
-    main()
+    create_app()
+    flask_app.run(host='0.0.0.0', port=int(os.getenv("PORT", 10000)))
