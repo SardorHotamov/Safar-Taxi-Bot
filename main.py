@@ -1514,7 +1514,7 @@ location_conv = ConversationHandler(
     # Webhook va polling
 #    flask_app.run(host='0.0.0.0', port=8080)
 
-async def main():
+def main():
     global app
     try:
         init_db()
@@ -1540,12 +1540,11 @@ async def main():
     # Webhook sozlash
     port = int(os.getenv("PORT", 10000))
     webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
-    await app.bot.set_webhook(url=webhook_url)  # Asinxron kutish
+    # Asinxron metodni sinxron tarzda chaqirish uchun asyncio ishlatamiz
+    asyncio.run(app.bot.set_webhook(url=webhook_url))
     logger.info(f"Webhook URL: {webhook_url}")
 
-    # Flask serverini ishga tushirish
-    flask_app.run(host='0.0.0.0', port=port)
+    # Flask serverini ishga tushirish (Gunicorn tomonidan boshqariladi)
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
