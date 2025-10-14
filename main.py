@@ -58,12 +58,13 @@ flask_app = Flask(__name__)
 #    return 'OK'
 
 @flask_app.route('/webhook', methods=['POST'])
-async def webhook():
+def webhook():
     global app
     if not app:
         return 'Application not initialized', 500
     update = Update.de_json(request.get_json(), app.bot)
-    await app.process_update(update)
+    # Asinxron funksiyani sinxron tarzda chaqirish
+    asyncio.run(app.process_update(update))
     return 'OK'
 
 # ------------------ ENV ------------------
@@ -1534,11 +1535,12 @@ def main():
     # Webhook ni sozlash
     port = int(os.getenv("PORT", 10000))
     webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
-    app.bot.set_webhook(url=webhook_url)
+    await app.bot.set_webhook(url=webhook_url)  # Asinxron kutish
     logger.info(f"Webhook URL: {webhook_url}")
 
     # Flask serverini ishga tushirish
     flask_app.run(host='0.0.0.0', port=port)
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
