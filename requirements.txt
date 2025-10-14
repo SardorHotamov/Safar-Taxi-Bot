@@ -1,7 +1,1 @@
-telegram
-python-telegram-bot[webhooks]
-python-dotenv==1.0.1
-pymongo==4.10.0
-schedule
-requests
-Flask
+"Flask\ngunicorn\nuvicorn\npython-telegram-bot==20.6\npymongo" 

@@ -38,18 +38,18 @@ from database import (
 #    update_subscription,
 )
 
-# Loglashni sozlash
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # ------------------ REGIONS (import) ------------------
 from regions import regions
 
 # ------------------ UTILS ------------------
 from utils import is_valid_date, format_date, format_time
 
-#Flask app webhook uchun
+# Flask sozlash
 flask_app = Flask(__name__)
+
+# Loglash
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 #@flask_app.route('/webhook', methods=['POST'])
 #async def webhook():
@@ -57,13 +57,19 @@ flask_app = Flask(__name__)
 #    await dispatcher.process_update(update)
 #    return 'OK'
 
+# Global o‘zgaruvchi
+app = None
+
+@flask_app.route('/')
+def home():
+    return 'Safar Taxi Bot is running', 200
+
 @flask_app.route('/webhook', methods=['POST'])
 def webhook():
     global app
     if not app:
         return 'Application not initialized', 500
     update = Update.de_json(request.get_json(), app.bot)
-    # Asinxron funksiyani sinxron tarzda chaqirish
     asyncio.run(app.process_update(update))
     return 'OK'
 
@@ -1508,8 +1514,7 @@ location_conv = ConversationHandler(
     # Webhook va polling
 #    flask_app.run(host='0.0.0.0', port=8080)
 
-def main():
-    # Ma'lumotlar bazasini ishga tushirish
+async def main():
     global app
     try:
         init_db()
@@ -1532,7 +1537,7 @@ def main():
     app.add_handler(CommandHandler("send_drivers", send_to_drivers))
     app.add_handler(CommandHandler("send_passengers", send_to_passengers))
 
-    # Webhook ni sozlash
+    # Webhook sozlash
     port = int(os.getenv("PORT", 10000))
     webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
     await app.bot.set_webhook(url=webhook_url)  # Asinxron kutish
