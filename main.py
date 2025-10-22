@@ -70,7 +70,6 @@ def webhook():
     if not app:
         return 'Application not initialized', 500
     update = Update.de_json(request.get_json(), app.bot)
-    # Asinxron metodni sinxron tarzda chaqirish uchun asyncio ishlatamiz
     app.process_update(update)
     return 'OK', 200
 
