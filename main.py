@@ -664,11 +664,13 @@ async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not role:
         await update.message.reply_text("Xatolik: Rol tanlanmagan. Iltimos, qaytadan boshlang.", reply_markup=role_keyboard())
         return CHOOSE_ROLE
+
     price = context.user_data.get('price') if role == "driver" else None
     when_mode = context.user_data.get('when_mode')
     when_date = context.user_data.get('when_date') if when_mode == 'plan' else None
     when_time = context.user_data.get('when_time') if when_mode == 'plan' else None
     seats = context.user_data.get('seats')
+
     try:
         save_trip(
             user_id,
@@ -687,22 +689,28 @@ async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"Yo‘nalishni saqlashda xato yuz berdi: {e}. Iltimos, qaytadan urinib ko‘ring.")
         return ConversationHandler.END
+
     trip = get_user_trip(user_id)
     if not trip:
         await update.message.reply_text("Yo‘nalish saqlanmadi. Iltimos, qaytadan urinib ko‘ring.")
         return ConversationHandler.END
+
     await update.message.reply_text(format_trip_info(trip))
     rm = post_route_menu_driver() if role == "driver" else post_route_menu_passenger()
     await update.message.reply_text("Safar boshlanganida Ketdik tugmasini bosishni unutmang\n Quyidagi tugmalardan foydalaning", reply_markup=rm)
+
     # Notify matching users
     user = get_user(user_id)
     if not user:
         await update.message.reply_text("Foydalanuvchi ma'lumotlari topilmadi.")
         return ConversationHandler.END
+
     if role == "driver":
         matches = get_matching_passengers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
         for m in matches:
-            match_id = m[0]
+            if not m or len(m) == 0:  # Xavfsizlik tekshiruvi
+                continue
+            match_id = m[0]  # Xato bu yerda edi — m bo'sh bo'lsa m[0] xato beradi
             match_user = get_user(match_id)
             if not match_user:
                 continue
@@ -716,7 +724,9 @@ async def save_and_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         matches = get_matching_drivers(trip['from_region'], trip['from_district'], trip['to_region'], trip['to_district'])
         for m in matches:
-            match_id = m[0]
+            if not m or len(m) == 0:  # Xavfsizlik tekshiruvi
+                continue
+            match_id = m[0]  # Xato bu yerda edi
             match_user = get_user(match_id)
             if not match_user:
                 continue
@@ -1523,7 +1533,7 @@ location_conv = ConversationHandler(
     # Webhook va polling
 #    flask_app.run(host='0.0.0.0', port=8080)
 
-def main():
+async def main():
     global app
     try:
         init_db()
