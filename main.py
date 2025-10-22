@@ -1558,13 +1558,17 @@ async def main():
 
     # Webhook sozlash
     # Webhook sozlash
-    webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
-    app.bot.set_webhook(url=webhook_url)  # Asinxron emas
+    # Webhook ni sozlash
+    webhook_url = WEBHOOK_URL + "/webhook"
+    await app.bot.set_webhook(webhook_url)
     logger.info(f"Webhook URL: {webhook_url}")
 
-    return flask_app
+    # Flask ni ishga tushirish
+    flask_app.run(host='0.0.0.0', port=PORT)
 
 if __name__ == "__main__":
-    create_app()
+    import asyncio
+    asyncio.run(main())
+
     # Mahalliy sinov uchun faqat, Render’da Gunicorn boshqaradi
     #flask_app.run(host='0.0.0.0', port=int(os.getenv("PORT", 10000)))
