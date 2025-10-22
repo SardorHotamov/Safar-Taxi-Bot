@@ -70,8 +70,9 @@ def webhook():
     if not app:
         return 'Application not initialized', 500
     update = Update.de_json(request.get_json(), app.bot)
-    asyncio.run(app.process_update(update))
-    return 'OK'
+    # Asinxron metodni sinxron tarzda chaqirish uchun asyncio ishlatamiz
+    app.process_update(update)
+    return 'OK', 200
 
 def create_app():
     global app
@@ -1533,7 +1534,7 @@ def main():
         raise
 
     # Ilova obyekti
-    app = Application.builder().token(BOT_TOKEN).build()
+    app = Application.builder().token(os.getenv("BOT_TOKEN")).build()
     logger.info("Application obyekti yaratildi")
 
     # Handler larni qo'shish
@@ -1547,12 +1548,14 @@ def main():
     app.add_handler(CommandHandler("send_passengers", send_to_passengers))
 
     # Webhook sozlash
+    # Webhook sozlash
     webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
-    asyncio.run(app.bot.set_webhook(url=webhook_url))
+    app.bot.set_webhook(url=webhook_url)  # Asinxron emas
     logger.info(f"Webhook URL: {webhook_url}")
 
     return flask_app
 
 if __name__ == "__main__":
     create_app()
-    flask_app.run(host='0.0.0.0', port=int(os.getenv("PORT", 10000)))
+    # Mahalliy sinov uchun faqat, Render’da Gunicorn boshqaradi
+    #flask_app.run(host='0.0.0.0', port=int(os.getenv("PORT", 10000)))
