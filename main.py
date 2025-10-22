@@ -70,7 +70,7 @@ def webhook():
     if not app:
         return 'Application not initialized', 500
     update = Update.de_json(request.get_json(), app.bot)
-    app.process_update(update)
+    app.process_update(update)  # asyncio.run() yo'q
     return 'OK', 200
 
 def create_app():
