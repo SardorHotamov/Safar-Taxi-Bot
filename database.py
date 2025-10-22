@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 import os
 from typing import Optional, Tuple, List
+#from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import logging
 

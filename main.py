@@ -1559,12 +1559,11 @@ async def main():
     # Webhook sozlash
     # Webhook sozlash
     # Webhook ni sozlash
-    webhook_url = WEBHOOK_URL + "/webhook"
-    await app.bot.set_webhook(webhook_url)
+    webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
+    app.bot.set_webhook(url=webhook_url)  # Sinxron chaqiriq
     logger.info(f"Webhook URL: {webhook_url}")
 
-    # Flask ni ishga tushirish
-    flask_app.run(host='0.0.0.0', port=PORT)
+    return flask_app
 
 if __name__ == "__main__":
     import asyncio
