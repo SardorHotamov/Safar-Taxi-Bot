@@ -69,8 +69,9 @@ def webhook():
     global app
     if not app:
         return 'Application not initialized', 500
+    from telegram import Update
     update = Update.de_json(request.get_json(), app.bot)
-    app.process_update(update)  # asyncio.run() yo'q
+    app.process_update(update)  # Sinxron chaqiriq
     return 'OK', 200
 
 def create_app():
