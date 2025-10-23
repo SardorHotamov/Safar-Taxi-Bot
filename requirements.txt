@@ -1,5 +1,4 @@
-fastapi
-gunicorn
+Flask
 uvicorn
 telegram
 python-telegram-bot[webhooks]
