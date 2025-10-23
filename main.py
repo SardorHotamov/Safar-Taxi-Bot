@@ -7,7 +7,8 @@ import requests
 import base64
 import json
 import logging
-from flask import Flask
+#from flask import Flask
+from fastapi import FastAPI
 
 from telegram import Update, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import (
@@ -45,10 +46,13 @@ from regions import regions
 from utils import is_valid_date, format_date, format_time
 
 # Flask sozlash
-flask_app = Flask(__name__)
+#flask_app = Flask(__name__)
 
 # Loglash
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
+#logger = logging.getLogger(__name__)
+
+app = FastAPI()
 logger = logging.getLogger(__name__)
 
 #@flask_app.route('/webhook', methods=['POST'])
@@ -58,24 +62,25 @@ logger = logging.getLogger(__name__)
 #    return 'OK'
 
 # Global o‘zgaruvchi
-app = None
+# Global o‘zgaruvchi
+telegram_app = None
 
-@flask_app.route('/')
-def home():
-    return 'Safar Taxi Bot is running', 200
+@app.get('/')
+async def home():
+    return {"message": "Safar Taxi Bot is running"}
 
-@flask_app.route('/webhook', methods=['POST'])
-def webhook():
-    global app
-    if not app:
-        return 'Application not initialized', 500
+@app.post('/webhook')
+async def webhook(request: dict):
+    global telegram_app
+    if not telegram_app:
+        return {"error": "Application not initialized"}, 500
     from telegram import Update
-    update = Update.de_json(request.get_json(), app.bot)
-    app.process_update(update)  # Sinxron chaqiriq
-    return 'OK', 200
+    update = Update.de_json(request, telegram_app.bot)
+    await telegram_app.process_update(update)
+    return {"status": "OK"}
 
-def create_app():
-    global app
+async def create_app():
+    global telegram_app
     try:
         init_db()
         logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
@@ -1544,18 +1549,21 @@ async def main():
         raise
 
     # Ilova obyekti
-    app = Application.builder().token(os.getenv("BOT_TOKEN")).build()
+#    app = Application.builder().token(os.getenv("BOT_TOKEN")).build()
+#    logger.info("Application obyekti yaratildi")
+
+    telegram_app = Application.builder().token(os.getenv("BOT_TOKEN")).build()
     logger.info("Application obyekti yaratildi")
 
     # Handler larni qo'shish
-    app.add_handler(route_conv)
-    app.add_handler(start_conv)
-    app.add_handler(location_conv)
-    app.add_handler(MessageHandler(filters.LOCATION, handle_location))
-    app.add_handler(CommandHandler("reply", reply_command))
-    app.add_handler(CommandHandler("send_all", send_to_all_groups))
-    app.add_handler(CommandHandler("send_drivers", send_to_drivers))
-    app.add_handler(CommandHandler("send_passengers", send_to_passengers))
+    telegram_app.add_handler(route_conv)
+    telegram_app.add_handler(start_conv)
+    telegram_app.add_handler(location_conv)
+    telegram_app.add_handler(MessageHandler(filters.LOCATION, handle_location))
+    telegram_app.add_handler(CommandHandler("reply", reply_command))
+    telegram_app.add_handler(CommandHandler("send_all", send_to_all_groups))
+    telegram_app.add_handler(CommandHandler("send_drivers", send_to_drivers))
+    telegram_app.add_handler(CommandHandler("send_passengers", send_to_passengers))
 
     # Webhook sozlash
     # Webhook sozlash
@@ -1566,9 +1574,13 @@ async def main():
 
     return flask_app
 
+webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
+    await telegram_app.bot.set_webhook(webhook_url)
+    logger.info(f"Webhook URL: {webhook_url}")
+
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main())
+    asyncio.run(create_app())
 
     # Mahalliy sinov uchun faqat, Render’da Gunicorn boshqaradi
     #flask_app.run(host='0.0.0.0', port=int(os.getenv("PORT", 10000)))
