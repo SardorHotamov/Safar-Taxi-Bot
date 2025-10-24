@@ -1209,6 +1209,7 @@ async def main():
     logger.info("DB ulandi")
 
     app = Application.builder().token(os.getenv("BOT_TOKEN")).build()
+    app.initialize()
     logger.info("Bot yaratildi")
 
     # Handler larni qo'shish
@@ -1222,10 +1223,12 @@ async def main():
     app.add_handler(CommandHandler("send_passengers", send_message_to_passengers))
 
     # Webhook sozlash
-    asyncio.create_task(keep_alive())
     webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
     await app.bot.set_webhook(url=webhook_url)
     logger.info(f"Webhook: {webhook_url}")
+
+    # Keep-alive
+    asyncio.create_task(keep_alive())
 
     # Flask server
     port = int(os.getenv("PORT", 10000))
