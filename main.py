@@ -1209,7 +1209,7 @@ async def main():
     logger.info("DB ulandi")
 
     app = Application.builder().token(os.getenv("BOT_TOKEN")).build()
-    app.initialize()
+    await app.initialize()
     logger.info("Bot yaratildi")
 
     # Handler larni qo'shish
