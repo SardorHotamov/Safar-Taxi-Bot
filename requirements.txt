@@ -1,4 +1,4 @@
-Flask
+Flask>=2.0.0
 gunicorn
 telegram
 python-telegram-bot[webhooks]
