@@ -157,7 +157,7 @@ from keyboards import (
 
 # ------------------ FLASK WEBHOOK ------------------
 @flask_app.route('/webhook', methods=['POST'])
-def webhook():
+async def webhook():
     global app
     if not app:
         return 'Bot not ready', 500
@@ -166,7 +166,7 @@ def webhook():
     return 'OK', 200
 
 @flask_app.route('/')
-def home():
+async def home():
     return 'Safar Taxi Bot is running', 200
 
 async def keep_alive():
