@@ -168,6 +168,11 @@ def webhook():
 def home():
     return 'Safar Taxi Bot is running', 200
 
+async def keep_alive():
+    while True:
+        requests.get(f"{WEBHOOK_URL}/")
+        await asyncio.sleep(300)  # 5 daqiqada bir
+
 def main_menu_keyboard():
     keyboard = [
         [KeyboardButton(BTN_DRIVER), KeyboardButton(BTN_PASSENGER)],
@@ -1216,6 +1221,7 @@ async def main():
     app.add_handler(CommandHandler("send_passengers", send_message_to_passengers))
 
     # Webhook sozlash
+    asyncio.create_task(keep_alive())
     webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
     await app.bot.set_webhook(url=webhook_url)
     logger.info(f"Webhook: {webhook_url}")
