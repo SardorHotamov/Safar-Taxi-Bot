@@ -1,3 +1,4 @@
+from flask import Flask, request
 import schedule
 import time
 import asyncio
@@ -13,6 +14,16 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
+
+# Flask
+flask_app = Flask(__name__)
+
+# Log
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Global
+app = None
 
 # ------------------ DATABASE IMPORTS ------------------
 from database import (
@@ -141,6 +152,20 @@ from keyboards import (
     hour_keyboard,
     admin_menu_keyboard,
 )
+
+# ------------------ FLASK WEBHOOK ------------------
+@flask_app.route('/webhook', methods=['POST'])
+def webhook():
+    global app
+    if not app:
+        return 'Bot not ready', 500
+    update = Update.de_json(request.get_json(), app.bot)
+    asyncio.run(app.process_update(update))
+    return 'OK', 200
+
+@flask_app.route('/')
+def home():
+    return 'Safar Taxi Bot is running', 200
 
 def main_menu_keyboard():
     keyboard = [
@@ -1171,14 +1196,13 @@ location_conv = ConversationHandler(
 )
 
 # ------------------ MAIN ------------------
-def main():
-    # Ma'lumotlar bazasini ishga tushirish
+async def main():
+    global app
     init_db()
-    logger.info("Ma'lumotlar bazasi muvaffaqiyatli ishga tushdi")
+    logger.info("DB ulandi")
 
-    # Ilova obyekti
-    app = Application.builder().token(BOT_TOKEN).build()
-    logger.info("Application obyekti yaratildi")
+    app = Application.builder().token(os.getenv("BOT_TOKEN")).build()
+    logger.info("Bot yaratildi")
 
     # Handler larni qo'shish
     app.add_handler(route_conv)
@@ -1190,14 +1214,14 @@ def main():
     app.add_handler(CommandHandler("send_drivers", send_message_to_drivers))
     app.add_handler(CommandHandler("send_passengers", send_message_to_passengers))
 
-    # Webhook ni sozlash
-    logger.info("Bot webhook rejimida ishga tushdi...")
-    app.run_webhook(
-        listen="0.0.0.0",
-        port=PORT,
-        url_path="webhook",
-        webhook_url=WEBHOOK_URL + "/webhook"
-    )
+    # Webhook sozlash
+    webhook_url = os.getenv("WEBHOOK_URL") + "/webhook"
+    await app.bot.set_webhook(url=webhook_url)
+    logger.info(f"Webhook: {webhook_url}")
+
+    # Flask server
+    port = int(os.getenv("PORT", 10000))
+    flask_app.run(host="0.0.0.0", port=port)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
