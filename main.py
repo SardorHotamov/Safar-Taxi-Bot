@@ -162,7 +162,7 @@ def webhook():
     if not app:
         return 'Bot not ready', 500
     update = Update.de_json(request.get_json(), app.bot)
-    asyncio.run(app.process_update(update))
+    await app.process_update(update)
     return 'OK', 200
 
 @flask_app.route('/')
@@ -173,6 +173,9 @@ async def keep_alive():
     while True:
         requests.get(f"{WEBHOOK_URL}/")
         await asyncio.sleep(300)  # 5 daqiqada bir
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    logger.error(f"Xato yuz berdi: {context.error}")
 
 def main_menu_keyboard():
     keyboard = [
@@ -1216,6 +1219,7 @@ async def main():
     app.add_handler(route_conv)
     app.add_handler(start_conv)
     app.add_handler(location_conv)
+    app.add_error_handler(error_handler)
     app.add_handler(MessageHandler(filters.LOCATION, handle_location))
     app.add_handler(CommandHandler("reply", reply_command))
     app.add_handler(CommandHandler("send_all", send_to_all_groups))
